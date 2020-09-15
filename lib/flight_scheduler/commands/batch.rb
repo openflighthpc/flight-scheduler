@@ -29,8 +29,22 @@ module FlightScheduler
   module Commands
     class Batch < Command
       def run
-        job = JobsRecord.create(connection: connection)
+        job = JobsRecord.create(script: script_path, connection: connection)
         puts "Submitted batch job #{job.id}"
+      end
+
+      def script_path
+        path = args.first
+        if File.absolute_path? path
+          path
+        elsif path[0] == '.'
+          File.expand_path path
+        elsif File.exists?(p = File.expand_path(path))
+          p
+        else
+          # TODO: This should expand the path from $PATH
+          raise NotImplementedError
+        end
       end
     end
   end
