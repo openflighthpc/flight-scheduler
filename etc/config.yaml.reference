@@ -34,21 +34,23 @@ config :api_prefix, default: 'v0'
 # Specify your authorization token to be used with the request. Contact your
 # system administrator to be issued with a token
 # =============================================================================
-config :jwt_token
+# TODO: Implement Authentication
+# config :jwt_token
 
 # =============================================================================
 # Verify SSL
 # Verify the SSL certificate when making requests to base_url.  Only
 # applicable for HTTPs connections.
 # =============================================================================
-config :verify_ssl, default: true
+# TODO: Use SSL
+# config :verify_ssl, default: true
 
 # ==============================================================================
 # Log Path
 # The file the logger will write to. It will write to standard error when set to
 # empty string.
 # ==============================================================================
-config :log_path, default: "#{xdg.cache_home}/flight/log/share/job.log",
+config :log_path, default: "#{xdg.cache_home}/flight/log/share/scheduler.log",
                   required: false
 
 # ==============================================================================
