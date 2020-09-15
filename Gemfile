@@ -34,6 +34,7 @@ git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 gem 'commander-openflighthpc'
 gem 'simple_json_api'
 gem 'hashie'
+gem 'xdg'
 
 group :development do
   gem 'pry'

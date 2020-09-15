@@ -39,7 +39,7 @@ begin
 
   require 'flight_scheduler/config'
 
-  if FlightScheduler::Config::CACHE.debug?
+  if FlightScheduler::Config::CACHE.development?
     begin
         Bundler.setup(:default, :development)
         require 'pry'

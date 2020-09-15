@@ -42,3 +42,18 @@ config :jwt_token
 # applicable for HTTPs connections.
 # =============================================================================
 config :verify_ssl, default: true
+
+# ==============================================================================
+# Log Path
+# The file the logger will write to. It will write to standard error when set to
+# empty string.
+# ==============================================================================
+config :log_path, default: "#{xdg.cache_home}/flight/log/share/job.log",
+                  required: false
+
+# ==============================================================================
+# Log level
+# Set at which severity the application will log
+# Valid levels: 'disabled', 'fatal', 'error', 'warn', 'info', 'debug'
+# ==============================================================================
+config :log_level, default: 'error'

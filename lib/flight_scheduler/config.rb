@@ -27,11 +27,12 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 
+require 'xdg'
 require 'yaml'
 require 'hashie'
 
 module FlightScheduler
-  REFERENCE_PATH = File.expand_path('../../etc/config.reference', __dir__)
+  REFERENCE_PATH = File.expand_path('../../etc/config.yaml.reference', __dir__)
   CONFIG_PATH = File.expand_path('../../etc/config.yaml', __dir__)
 
   class Config < Hashie::Trash

@@ -36,6 +36,7 @@ GEM
     thread_safe (0.3.6)
     tzinfo (1.2.7)
       thread_safe (~> 0.1)
+    xdg (4.2.0)
     zeitwerk (2.4.0)
 
 PLATFORMS
@@ -47,6 +48,7 @@ DEPENDENCIES
   pry
   pry-byebug
   simple_json_api
+  xdg
 
 BUNDLED WITH
    2.1.4
