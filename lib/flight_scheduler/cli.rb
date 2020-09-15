@@ -76,6 +76,10 @@ module FlightScheduler
       c.slop.integer '-N', '--nodes', 'The minimum number of required nodes'
     end
 
+    create_command 'cancel', 'JOBID' do |c|
+      c.summary = 'Remove a scheduled job'
+    end
+
     if Config::CACHE.development?
       create_command 'console' do |c|
         require_relative 'commands'

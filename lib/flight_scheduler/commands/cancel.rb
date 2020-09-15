@@ -25,28 +25,12 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 
-require 'simple_jsonapi_client'
-
 module FlightScheduler
-  class BaseRecord < SimpleJSONAPIClient::Base
-    def self.inherited(base)
-      base.const_set('TYPE', base.name.split('::').last.sub(/Record\Z/, '').downcase)
-      base.const_set('COLLECTION_URL', "/#{Config::CACHE.api_prefix}/#{base::TYPE}")
-      base.const_set('INDIVIDUAL_URL', "#{base::COLLECTION_URL}/%{id}")
+  module Commands
+    class Cancel < Command
+      def run
+        JobsRecord.new(id: args.first, connection: connection).delete
+      end
     end
   end
-
-  class PartitionsRecord < BaseRecord
-    attributes :name, :nodes
-  end
-
-  class SchedularsRecord < BaseRecord
-  end
-
-  class JobsRecord < BaseRecord
-    attributes :min_nodes, :script
-
-    has_one :schedular, class_name: 'FlightScheduler::SchedularsRecord'
-  end
 end
-
