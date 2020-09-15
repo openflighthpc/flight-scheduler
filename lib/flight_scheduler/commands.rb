@@ -27,7 +27,7 @@
 
 require_relative 'command'
 
-module FlightSchedule
+module FlightScheduler
   module Commands
     def self.constantize(sym)
       sym.to_s.dup.split(/[-_]/).each { |c| c[0] = c[0].upcase }.join

@@ -25,6 +25,10 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 
+require_relative 'records'
+require 'faraday'
+require 'faraday_middleware'
+
 module FlightScheduler
   class Command
     attr_accessor :args, :opts
@@ -51,6 +55,17 @@ module FlightScheduler
 
     def run
       raise NotImplementedError
+    end
+
+    def connection
+      @connection ||= Faraday.new(url: Config::CACHE.base_url) do |c|
+        c.use Faraday::Response::Logger, Config::CACHE.logger, { bodies: true } do |l|
+          l.filter(/(Authorization:)(.*)/, '\1 [REDACTED]')
+        end
+        c.request :json
+        c.response :json, :content_type => /\bjson$/
+        c.adapter :net_http
+      end
     end
   end
 end

@@ -29,6 +29,7 @@ module FlightScheduler
   module Commands
     class Info < Command
       def run
+        puts PartitionsRecord.fetch_all(connection: connection)
       end
     end
   end

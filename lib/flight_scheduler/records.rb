@@ -25,33 +25,19 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 
-require 'simple_json_api'
+require 'simple_jsonapi_client'
 
 module FlightScheduler
   class BaseRecord < SimpleJSONAPIClient::Base
-    def self.inherited(klass)
-      resolve_custom_type klass.resource_name, klass
+    def self.inherited(base)
+      base.const_set('TYPE', base.name.split('::').last.sub(/Record\Z/, '').downcase)
+      base.const_set('COLLECTION_URL', "/#{Config::CACHE.api_prefix}/#{base::TYPE}")
+      base.const_set('INDIVIDUAL_URL', "#{base::COLLECTION_URL}/{id}")
     end
-
-    def self.resource_name
-      @resource_name ||= self.to_s.demodulize.chomp('Record').downcase.pluralize
-    end
-
-    # Overridden to add `compact` call to paths prior to joining them.
-    # Without this multiple shallow belongs_to assocations don't work when the
-    # base_url contains a path part.
-    def self._set_prefix_path(attrs)
-      paths = _belongs_to_associations.map do |a|
-        a.set_prefix_path(attrs, route_formatter)
-      end
-
-      paths.compact.join("/")
-    end
-
-    self.site = File.join(Config::CACHE.base_url, Config::CACHE.api_prefix)
   end
 
-  class PartitionRecord < BaseRecord
+  class PartitionsRecord < BaseRecord
+    attributes :name
   end
 end
 
