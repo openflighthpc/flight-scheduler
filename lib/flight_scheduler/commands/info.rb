@@ -28,8 +28,18 @@
 module FlightScheduler
   module Commands
     class Info < Command
+      extend OutputMode::TLDR::Index
+
+      register_column(header: 'PARTITION') { |p| p.name }
+      register_column(header: 'AVAIL') { |_| 'TBD' }
+      register_column(header: 'TIMELIMIT') { |_| 'TBD' }
+      register_column(header: 'NODES') { |p| p.nodes.length }
+      register_column(header: 'STATE') { |_| 'TBD' }
+      register_column(header: 'NODELIST') { |p| p.nodes.join(',') }
+
       def run
-        puts PartitionsRecord.fetch_all(connection: connection)
+        records = PartitionsRecord.fetch_all(connection: connection)
+        puts self.class.build_output.render(*records)
       end
     end
   end

@@ -27,8 +27,6 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 
-require 'json_api_client'
-
 module FlightScheduler
   class Error < RuntimeError
     def self.define_class(code)

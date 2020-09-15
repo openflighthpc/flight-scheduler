@@ -26,8 +26,11 @@
 #===============================================================================
 
 require_relative 'records'
+require_relative 'errors'
+
 require 'faraday'
 require 'faraday_middleware'
+require 'output_mode'
 
 module FlightScheduler
   class Command

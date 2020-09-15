@@ -37,7 +37,7 @@ module FlightScheduler
   end
 
   class PartitionsRecord < BaseRecord
-    attributes :name
+    attributes :name, :nodes
   end
 end
 

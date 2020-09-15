@@ -32,8 +32,9 @@ source "https://rubygems.org"
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
 gem 'commander-openflighthpc'
-gem 'simple_jsonapi_client'
 gem 'hashie'
+gem 'output_mode'
+gem 'simple_jsonapi_client'
 gem 'xdg'
 
 group :development do
