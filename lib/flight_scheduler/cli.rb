@@ -80,6 +80,10 @@ module FlightScheduler
       c.summary = 'Remove a scheduled job'
     end
 
+    create_command 'queue' do |c|
+      c.summary = 'List all current jobs'
+    end
+
     if Config::CACHE.development?
       create_command 'console' do |c|
         require_relative 'commands'

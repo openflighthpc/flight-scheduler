@@ -25,29 +25,24 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 
-require 'simple_jsonapi_client'
-
 module FlightScheduler
-  class BaseRecord < SimpleJSONAPIClient::Base
-    def self.inherited(base)
-      base.const_set('TYPE', base.name.split('::').last.sub(/Record\Z/, '').downcase)
-      base.const_set('COLLECTION_URL', "/#{Config::CACHE.api_prefix}/#{base::TYPE}")
-      base.const_set('INDIVIDUAL_URL', "#{base::COLLECTION_URL}/%{id}")
+  module Commands
+    class Queue < Command
+      extend OutputMode::TLDR::Index
+
+      register_column(header: 'JOBID') { |j| j.id }
+      register_column(header: 'PARTITION') { |j| j.schedular.name }
+      register_column(header: 'NAME') { |j| File.basename(j.script) }
+      register_column(header: 'USER') { |_| 'TBD' }
+      register_column(header: 'ST') { |_| 'TBD' }
+      register_column(header: 'TIME') { |_| 'TBD' }
+      register_column(header: 'NODES') { |j| j.min_nodes || j.attributes[:'min-nodes'] }
+      register_column(header: 'NODELIST(REASON)') { |_| 'TBD' }
+
+      def run
+        records = JobsRecord.fetch_all(includes: ['schedular'], connection: connection)
+        puts self.class.build_output.render(*records)
+      end
     end
   end
-
-  class PartitionsRecord < BaseRecord
-    attributes :name, :nodes
-  end
-
-  class SchedularsRecord < BaseRecord
-    attributes :name
-  end
-
-  class JobsRecord < BaseRecord
-    attributes :min_nodes, :script
-
-    has_one :schedular, class_name: 'FlightScheduler::SchedularsRecord'
-  end
 end
-
