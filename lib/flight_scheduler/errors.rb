@@ -30,57 +30,35 @@
 require 'json_api_client'
 
 module FlightScheduler
-  class BaseError < StandardError; end
-  class InvalidInput < BaseError; end
-  class UnexpectedError < BaseError
-    MSG = 'An unexpected error has occurred!'
+  class Error < RuntimeError
+    def self.define_class(code)
+      Class.new(self).tap do |klass|
+        klass.instance_variable_set(:@exit_code, code)
+      end
+    end
+
+    def self.exit_code
+      @exit_code || begin
+        superclass.respond_to?(:exit_code) ? superclass.exit_code : 2
+      end
+    end
+
+    def exit_code
+      self.class.exit_code
+    end
+  end
+
+  InternalError = Error.define_class(1)
+  GeneralError = Error.define_class(2)
+  InputError = GeneralError.define_class(3)
+
+  class InteractiveOnly < InputError
+    MSG = 'This command requires an interactive terminal'
 
     def initialize(msg = MSG)
       super
     end
   end
-  class ClientError < BaseError; end
-  class InternalServerError < BaseError; end
-  class ConnectionError < BaseError
-    def initialize(msg = nil)
-      super('Unable to connect to Flight Scheduler API')
-    end
-  end
 
-  # A replacement for JsonApiClient::Errors::NotFound that doesn't throw away
-  # the response.  This allows the error message to be inspected to determine
-  # what was not found: the resource at the URL or one of its related
-  # resources.
-  class NotFound < JsonApiClient::Errors::ApiError
-    attr_reader :uri
-
-    def initialize(env)
-      @uri = env[:url]
-      super env
-    end
-
-    private
-
-    # Try to fetch json_api errors from response
-    #
-    # A replacement for JsonApiClient::Errors::ApiError#track_json_api_errors
-    # that prefers the error `detail` over the error `title`.
-    def track_json_api_errors(msg)
-      return msg unless env.try(:body).kind_of?(Hash) || env.body.key?('errors')
-
-      errors = JsonApiClient::ErrorCollector.new(env.body.fetch('errors', []))
-      errors_msg = errors
-        .map { |e| e.error_msg(prefer_details: true) }
-        .compact
-        .join('; ')
-        .presence
-
-      return msg unless errors_msg
-
-      msg.nil? ? errors_msg : "#{msg} (#{errors_msg})"
-      # Just to be sure that it is back compatible
-    rescue StandardError
-      msg
-    end
-  end
+  MissingError = GeneralError.define_class(20)
 end
