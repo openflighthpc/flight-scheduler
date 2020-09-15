@@ -17,20 +17,27 @@ config :program_application,  default: 'Flight Scheduler'
 config :program_description,  default: 'Schedule and manage jobs across your cluster'
 
 # =============================================================================
-# App Base Url [REQUIRED]
+# App Base Url
 # Specify the location where the API server is being hosted
 # =============================================================================
 config :base_url
 
 # =============================================================================
-# JWT Token [REQUIRED]
+# API Prefix
+# Specify the version of the remote API. Note the client is tied to a particular
+# implementation and may not be interoperable with latter versions.
+# =============================================================================
+config :api_prefix, default: 'v0'
+
+# =============================================================================
+# JWT Token
 # Specify your authorization token to be used with the request. Contact your
 # system administrator to be issued with a token
 # =============================================================================
 config :jwt_token
 
 # =============================================================================
-# Verify SSL [OPTIONAL]
+# Verify SSL
 # Verify the SSL certificate when making requests to base_url.  Only
 # applicable for HTTPs connections.
 # =============================================================================

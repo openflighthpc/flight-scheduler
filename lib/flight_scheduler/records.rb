@@ -50,7 +50,7 @@ module FlightScheduler
       paths.compact.join("/")
     end
 
-    self.site = Config::CACHE.base_url
+    self.site = File.join(Config::CACHE.base_url, Config::CACHE.api_prefix)
   end
 end
 
