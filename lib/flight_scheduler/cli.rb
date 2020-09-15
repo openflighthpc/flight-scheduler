@@ -71,6 +71,10 @@ module FlightScheduler
       c.summary = 'List the available partitions'
     end
 
+    create_command 'batch', 'SCRIPT [ARGS...]' do |c|
+      c.summary = 'Schedule a new job to be ran'
+    end
+
     if Config::CACHE.development?
       create_command 'console' do |c|
         require_relative 'commands'

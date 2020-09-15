@@ -60,8 +60,15 @@ module FlightScheduler
       raise NotImplementedError
     end
 
+    def headers
+      {
+        'Content-Type' => 'application/vnd.api+json',
+        'Accept' => 'application/vnd.api+json'
+      }
+    end
+
     def connection
-      @connection ||= Faraday.new(url: Config::CACHE.base_url) do |c|
+      @connection ||= Faraday.new(url: Config::CACHE.base_url, headers: headers) do |c|
         c.use Faraday::Response::Logger, Config::CACHE.logger, { bodies: true } do |l|
           l.filter(/(Authorization:)(.*)/, '\1 [REDACTED]')
         end
