@@ -60,17 +60,21 @@ module FlightScheduler
     end
 
     # Forces version to match the code base
-    program :version, "v#{FlightJob::VERSION}"
+    program :version, "v#{FlightScheduler::VERSION}"
     program :help_paging, false
 
     if [/^xterm/, /rxvt/, /256color/].all? { |regex| ENV['TERM'] !~ regex }
       Paint.mode = 0
     end
 
+    create_command 'info' do |c|
+      c.summary = 'List the available partitions'
+    end
+
     if Config::CACHE.development?
       create_command 'console' do |c|
         require_relative 'commands'
-        c.action { FlightJob::Command.new().instance_exec { binding.pry } }
+        c.action { FlightScheduler::Command.new().instance_exec { binding.pry } }
       end
     end
   end

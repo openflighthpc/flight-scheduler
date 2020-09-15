@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #==============================================================================
 # Copyright (C) 2020-present Alces Flight Ltd.
 #
@@ -51,6 +49,9 @@ module FlightScheduler
     end
 
     self.site = File.join(Config::CACHE.base_url, Config::CACHE.api_prefix)
+  end
+
+  class PartitionRecord < BaseRecord
   end
 end
 

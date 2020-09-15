@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 #==============================================================================
 # Copyright (C) 2020-present Alces Flight Ltd.
 #
@@ -26,38 +25,32 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 
-begin
-  lib_dir = File.expand_path(File.join(__FILE__, '../../lib'))
-  $LOAD_PATH.unshift(lib_dir)
-  ENV['BUNDLE_GEMFILE'] ||= File.join(__FILE__, '../../Gemfile')
+module FlightScheduler
+  class Command
+    attr_accessor :args, :opts
 
-  require 'rubygems'
-  require 'bundler'
+    def initialize(*args, **opts)
+      @args = args.freeze
+      @opts = Hashie::Mash.new(opts)
+    end
 
-  Bundler.setup(:default)
+    def run!
+      Config::CACHE.logger.info "Running: #{self.class}"
+      run
+      Config::CACHE.logger.info 'Exited: 0'
+    rescue => e
+      if e.respond_to? :exit_code
+        Config::CACHE.logger.fatal "Exited: #{e.exit_code}"
+      else
+        Config::CACHE.logger.fatal 'Exited non-zero'
+      end
+      Config::CACHE.logger.debug e.backtrace.reverse.join("\n")
+      Config::CACHE.logger.error "(#{e.class}) #{e.message}"
+      raise e
+    end
 
-  require 'flight_scheduler/config'
-
-  if FlightScheduler::Config::CACHE.development?
-    begin
-        Bundler.setup(:default, :development)
-        require 'pry'
-        require 'pry-byebug'
-    rescue StandardError, LoadError
-      Bundler.setup(:default)
-      $stderr.puts "An error occurred when enabling development mode!"
+    def run
+      raise NotImplementedError
     end
   end
-
-  require 'flight_scheduler/cli'
-
-  Dir.chdir(ENV.fetch('FLIGHT_CWD','.'))
-  FlightScheduler::CLI.run(*ARGV)
-rescue Interrupt
-  if Kernel.const_defined?(:Paint)
-    $stderr.puts "\n#{Paint['WARNING', :underline, :yellow]}: Cancelled by user"
-  else
-    $stderr.puts "\nWARNING: Cancelled by user"
-  end
-  exit(130)
 end

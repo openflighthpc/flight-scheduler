@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 #==============================================================================
 # Copyright (C) 2020-present Alces Flight Ltd.
 #
@@ -26,38 +25,11 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 
-begin
-  lib_dir = File.expand_path(File.join(__FILE__, '../../lib'))
-  $LOAD_PATH.unshift(lib_dir)
-  ENV['BUNDLE_GEMFILE'] ||= File.join(__FILE__, '../../Gemfile')
-
-  require 'rubygems'
-  require 'bundler'
-
-  Bundler.setup(:default)
-
-  require 'flight_scheduler/config'
-
-  if FlightScheduler::Config::CACHE.development?
-    begin
-        Bundler.setup(:default, :development)
-        require 'pry'
-        require 'pry-byebug'
-    rescue StandardError, LoadError
-      Bundler.setup(:default)
-      $stderr.puts "An error occurred when enabling development mode!"
+module FlightScheduler
+  module Commands
+    class Info < Command
+      def run
+      end
     end
   end
-
-  require 'flight_scheduler/cli'
-
-  Dir.chdir(ENV.fetch('FLIGHT_CWD','.'))
-  FlightScheduler::CLI.run(*ARGV)
-rescue Interrupt
-  if Kernel.const_defined?(:Paint)
-    $stderr.puts "\n#{Paint['WARNING', :underline, :yellow]}: Cancelled by user"
-  else
-    $stderr.puts "\nWARNING: Cancelled by user"
-  end
-  exit(130)
 end
