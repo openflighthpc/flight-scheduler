@@ -1,0 +1,37 @@
+# vim: set filetype=ruby:
+# =============================================================================
+# Leave this file in place as a reference.
+# NOTE: Copying this file into place will result in all keys being set to
+# empty string.
+#
+# The actual configuration file should be stored as:
+# etc/config.yaml
+# =============================================================================
+
+# ==============================================================================
+# CLI "Program" Configuration
+# Sets the various program fields on FlightJob::CLI
+# ==============================================================================
+config :program_name,         default: 'bin/scheduler'
+config :program_application,  default: 'Flight Scheduler'
+config :program_description,  default: 'Schedule and manage jobs across your cluster'
+
+# =============================================================================
+# App Base Url [REQUIRED]
+# Specify the location where the API server is being hosted
+# =============================================================================
+config :base_url
+
+# =============================================================================
+# JWT Token [REQUIRED]
+# Specify your authorization token to be used with the request. Contact your
+# system administrator to be issued with a token
+# =============================================================================
+config :jwt_token
+
+# =============================================================================
+# Verify SSL [OPTIONAL]
+# Verify the SSL certificate when making requests to base_url.  Only
+# applicable for HTTPs connections.
+# =============================================================================
+config :verify_ssl, default: true
