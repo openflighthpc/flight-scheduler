@@ -73,6 +73,7 @@ module FlightScheduler
 
     create_command 'batch', 'SCRIPT [ARGS...]' do |c|
       c.summary = 'Schedule a new job to be ran'
+      c.slop.integer '-N', '--nodes', 'The minimum number of required nodes'
     end
 
     if Config::CACHE.development?

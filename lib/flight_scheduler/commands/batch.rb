@@ -29,7 +29,7 @@ module FlightScheduler
   module Commands
     class Batch < Command
       def run
-        job = JobsRecord.create(script: script_path, connection: connection)
+        job = JobsRecord.create(script: script_path, min_nodes: opts.nodes, connection: connection)
         puts "Submitted batch job #{job.id}"
       end
 
