@@ -28,6 +28,8 @@
 module FlightScheduler
   module Commands
     class Batch < Command
+      NUM_REGEX = /\A\d+[km]?\Z/
+
       def run
         job = JobsRecord.create(script: script_path, min_nodes: opts.nodes, connection: connection)
         puts "Submitted batch job #{job.id}"
@@ -56,6 +58,17 @@ module FlightScheduler
 
           # Return the absolute path or error
           root ? File.join(root, path) : raise(MissingError, "Could not locate: #{path}")
+        end
+      end
+
+      def nodes_opts
+        if NUM_REGEX.match? opts.nodes
+          opts.nodes
+        else
+          raise InputError, <<~ERROR.chomp
+            Unrecognized number syntax: #{opts.nodes}
+            It should be a number with an optional k or m suffix.
+          ERROR
         end
       end
     end
