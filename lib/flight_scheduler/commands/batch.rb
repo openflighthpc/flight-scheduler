@@ -31,7 +31,7 @@ module FlightScheduler
       NUM_REGEX = /\A\d+[km]?\Z/
 
       def run
-        job = JobsRecord.create(script: script_path, min_nodes: opts.nodes, connection: connection)
+        job = JobsRecord.create(script: script_path, min_nodes: nodes_opts, connection: connection)
         puts "Submitted batch job #{job.id}"
       end
 
@@ -62,6 +62,7 @@ module FlightScheduler
       end
 
       def nodes_opts
+        return 1 unless opts.nodes
         if NUM_REGEX.match? opts.nodes
           opts.nodes
         else
