@@ -31,7 +31,7 @@ module FlightScheduler
       extend OutputMode::TLDR::Index
 
       register_column(header: 'JOBID') { |j| j.id }
-      register_column(header: 'PARTITION') { |j| j.schedular.name }
+      register_column(header: 'PARTITION') { |j| j.partition.name }
       register_column(header: 'NAME') { |j| File.basename(j.script) }
       register_column(header: 'USER') { |_| 'TBD' }
       register_column(header: 'ST') { |_| 'TBD' }
@@ -40,7 +40,7 @@ module FlightScheduler
       register_column(header: 'NODELIST(REASON)') { |_| 'TBD' }
 
       def run
-        records = JobsRecord.fetch_all(includes: ['schedular'], connection: connection)
+        records = JobsRecord.fetch_all(includes: ['partition'], connection: connection)
         puts self.class.build_output.render(*records)
       end
     end
