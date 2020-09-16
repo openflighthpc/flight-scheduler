@@ -79,7 +79,7 @@ module FlightScheduler
       MAGIC_BATCH_SLOP.each { |opt| c.slop.send(:add_option, opt.dup) }
       c.slop.string '-C', '--comment-prefix',
                     'Parse comment lines starting with COMMENT_PREFIX as additional options',
-                    default: 'SBATCH'
+                    default: Config::CACHE.comment_prefix
     end
 
     create_command 'cancel', 'JOBID' do |c|
