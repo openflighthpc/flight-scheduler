@@ -77,17 +77,13 @@ module FlightScheduler
       end
 
       def read_magic_arguments_string
-        ''.tap do |args|
-          File.open(script_path) do |file|
-            regex = /\A##{opts.comment_prefix}(?<args>.*)$/
-            while (line = file.gets.to_s)[0] == '#'
-              if match = regex.match(line)
-                args << match.named_captures['args']
-                args << ' '
-              end
-            end
-          end
-        end
+        regex = /\A##{opts.comment_prefix}(?<args>.*)$/
+        File.read(script_path)
+            .each_line
+            .map { |l| regex.match(l) }
+            .reject(&:nil?)
+            .map { |m| m.named_captures['args'] }
+            .join(' ')
       end
 
       def script_path
