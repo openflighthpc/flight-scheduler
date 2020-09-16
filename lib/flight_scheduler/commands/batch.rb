@@ -32,7 +32,10 @@ module FlightScheduler
 
       def run
         ensure_shebang
-        job = JobsRecord.create(script: script_path, min_nodes: min_nodes, connection: connection)
+        job = JobsRecord.create(arguments: args,
+                                script: script_path,
+                                min_nodes: min_nodes,
+                                connection: connection)
         puts "Submitted batch job #{job.id}"
       end
 
