@@ -32,7 +32,7 @@ module FlightScheduler
 
       def run
         ensure_shebang
-        job = JobsRecord.create(script: script_path, min_nodes: nodes_opts, connection: connection)
+        job = JobsRecord.create(script: script_path, min_nodes: min_nodes, connection: connection)
         puts "Submitted batch job #{job.id}"
       end
 
@@ -45,19 +45,31 @@ module FlightScheduler
         end
       end
 
-      def magic_arguments_string
-        @magic_arguments_string ||= begin
-          ''.tap do |args|
-            File.open(script_path) do |file|
-              regex = /\A#SBATCH(?<args>.*)$/
-              while (line = file.gets.to_s)[0] == '#'
-                if match = regex.match(line)
-                  args << match.named_captures['args']
-                  args << ' '
-                end
+      def read_magic_arguments_string
+        ''.tap do |args|
+          File.open(script_path) do |file|
+            regex = /\A#SBATCH(?<args>.*)$/
+            while (line = file.gets.to_s)[0] == '#'
+              if match = regex.match(line)
+                args << match.named_captures['args']
+                args << ' '
               end
             end
           end
+        end
+      end
+
+      def merged_opts
+        @merged_opts ||= begin
+          magic = CLI::MAGIC_BATCH_SLOP.parse(read_magic_arguments_string.split(' '))
+                                       .to_h
+                                       .reject { |_, v| v.nil? }
+                                       .map { |k, v| [k.to_s, v] }
+                                       .to_h
+          cli = opts.reject { |_, v| v.nil? }
+                    .map { |k, v| [k.to_s, v] }
+                    .to_h
+          Hashie::Mash.new.merge(magic).merge(cli)
         end
       end
 
@@ -89,13 +101,13 @@ module FlightScheduler
         end
       end
 
-      def nodes_opts
-        return 1 unless opts.nodes
-        if NUM_REGEX.match? opts.nodes
-          opts.nodes
+      def min_nodes
+        return 1 unless merged_opts.nodes
+        if NUM_REGEX.match? merged_opts.nodes
+          merged_opts.nodes
         else
           raise InputError, <<~ERROR.chomp
-            Unrecognized number syntax: #{opts.nodes}
+            Unrecognized number syntax: #{merged_opts.nodes}
             It should be a number with an optional k or m suffix.
           ERROR
         end
