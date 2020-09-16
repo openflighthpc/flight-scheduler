@@ -70,6 +70,7 @@ module FlightScheduler
     end
 
     MAGIC_BATCH_SLOP = Slop::Options.new.tap do |slop|
+      slop.parser.config[:suppress_errors] = true
       slop.string '-N', '--nodes', 'The minimum number of required nodes'
     end
 
