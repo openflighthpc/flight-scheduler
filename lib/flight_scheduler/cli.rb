@@ -77,6 +77,9 @@ module FlightScheduler
     create_command 'batch', 'SCRIPT [ARGS...]' do |c|
       c.summary = 'Schedule a new job to be ran'
       MAGIC_BATCH_SLOP.each { |opt| c.slop.send(:add_option, opt.dup) }
+      c.slop.string '-C', '--comment-prefix',
+                    'Parse comment lines starting with COMMENT_PREFIX as additional options',
+                    default: 'SBATCH'
     end
 
     create_command 'cancel', 'JOBID' do |c|
