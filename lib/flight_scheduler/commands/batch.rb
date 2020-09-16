@@ -45,6 +45,22 @@ module FlightScheduler
         end
       end
 
+      def magic_arguments_string
+        @magic_arguments_string ||= begin
+          ''.tap do |args|
+            File.open(script_path) do |file|
+              regex = /\A#SBATCH(?<args>.*)$/
+              while (line = file.gets.to_s)[0] == '#'
+                if match = regex.match(line)
+                  args << match.named_captures['args']
+                  args << ' '
+                end
+              end
+            end
+          end
+        end
+      end
+
       def script_path
         @script_path ||= begin
           path = args.first
