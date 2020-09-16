@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #==============================================================================
 # Copyright (C) 2020-present Alces Flight Ltd.
 #
@@ -73,7 +71,7 @@ module FlightScheduler
 
     create_command 'batch', 'SCRIPT [ARGS...]' do |c|
       c.summary = 'Schedule a new job to be ran'
-      c.slop.integer '-N', '--nodes', 'The minimum number of required nodes'
+      c.slop.string '-N', '--nodes', 'The minimum number of required nodes'
     end
 
     create_command 'cancel', 'JOBID' do |c|
