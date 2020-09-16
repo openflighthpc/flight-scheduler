@@ -77,7 +77,7 @@ module FlightScheduler
       end
 
       def read_magic_arguments_string
-        regex = /\A##{opts.comment_prefix}(?<args>.*)$/
+        regex = /\A##{opts.comment_prefix}\s(?<args>.*)$/
         File.read(script_path)
             .each_line
             .map { |l| regex.match(l) }
