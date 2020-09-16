@@ -31,8 +31,18 @@ module FlightScheduler
       NUM_REGEX = /\A\d+[km]?\Z/
 
       def run
+        ensure_shebang
         job = JobsRecord.create(script: script_path, min_nodes: nodes_opts, connection: connection)
         puts "Submitted batch job #{job.id}"
+      end
+
+      def ensure_shebang
+        File.open(script_path) do |file|
+          shebang = file.gets(2).to_s
+          raise InputError, <<~ERROR.chomp unless shebang == '#!'
+            The script appears to have an invalid shebang line
+          ERROR
+        end
       end
 
       def script_path
