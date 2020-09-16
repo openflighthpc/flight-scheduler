@@ -43,7 +43,9 @@ module FlightScheduler
         File.open(script_path) do |file|
           shebang = file.gets(2).to_s
           raise InputError, <<~ERROR.chomp unless shebang == '#!'
-            The script appears to have an invalid shebang line
+            This does not look like a batch script!
+            The first line must start with #! followed by the interpreter path.
+            For instance: #{Paint["#!/bin/bash", :yellow]}
           ERROR
         end
       end
