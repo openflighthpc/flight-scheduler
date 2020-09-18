@@ -32,7 +32,7 @@ module FlightScheduler
 
       def run
         ensure_shebang
-        job = JobsRecord.create(arguments: args,
+        job = JobsRecord.create(arguments: args[1..-1],
                                 script: script_path,
                                 min_nodes: min_nodes,
                                 connection: connection)
