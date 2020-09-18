@@ -69,9 +69,17 @@ module FlightScheduler
       c.summary = 'List the available partitions'
     end
 
+    MAGIC_BATCH_SLOP = Slop::Options.new.tap do |slop|
+      slop.parser.config[:suppress_errors] = true
+      slop.string '-N', '--nodes', 'The minimum number of required nodes'
+    end
+
     create_command 'batch', 'SCRIPT [ARGS...]' do |c|
       c.summary = 'Schedule a new job to be ran'
-      c.slop.string '-N', '--nodes', 'The minimum number of required nodes'
+      MAGIC_BATCH_SLOP.each { |opt| c.slop.send(:add_option, opt.dup) }
+      c.slop.string '-C', '--comment-prefix',
+                    'Parse comment lines starting with COMMENT_PREFIX as additional options',
+                    default: Config::CACHE.comment_prefix
     end
 
     create_command 'cancel', 'JOBID' do |c|

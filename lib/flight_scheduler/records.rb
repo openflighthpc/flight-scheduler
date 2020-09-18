@@ -41,7 +41,7 @@ module FlightScheduler
   end
 
   class JobsRecord < BaseRecord
-    attributes :min_nodes, :script
+    attributes :min_nodes, :script, :arguments
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
   end

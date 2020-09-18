@@ -1,12 +1,30 @@
 # vim: set filetype=ruby:
-# =============================================================================
-# Leave this file in place as a reference.
-# NOTE: Copying this file into place will result in all keys being set to
-# empty string.
+#==============================================================================
+# Copyright (C) 2020-present Alces Flight Ltd.
 #
-# The actual configuration file should be stored as:
-# etc/config.yaml
-# =============================================================================
+# This file is part of Flight Scheduler.
+#
+# This program and the accompanying materials are made available under
+# the terms of the Eclipse Public License 2.0 which is available at
+# <https://www.eclipse.org/legal/epl-2.0>, or alternative license
+# terms made available by Alces Flight Ltd - please direct inquiries
+# about licensing to licensing@alces-flight.com.
+#
+# Flight Scheduler is distributed in the hope that it will be useful, but
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR
+# IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS
+# OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A
+# PARTICULAR PURPOSE. See the Eclipse Public License 2.0 for more
+# details.
+#
+# You should have received a copy of the Eclipse Public License 2.0
+# along with Flight Scheduler. If not, see:
+#
+#  https://opensource.org/licenses/EPL-2.0
+#
+# For more information on Flight Scheduler, please visit:
+# https://github.com/openflighthpc/flight-scheduler
+#===============================================================================
 
 # ==============================================================================
 # CLI "Program" Configuration
@@ -28,6 +46,13 @@ config :base_url
 # implementation and may not be interoperable with latter versions.
 # =============================================================================
 config :api_prefix, default: 'v0'
+
+# =============================================================================
+# Comment Prefix
+# Specify the default prefix magic comment lines start with. The magic comment
+# lines are applied as additional options to the job
+# =============================================================================
+config :comment_prefix, default: 'SBATCH'
 
 # =============================================================================
 # JWT Token
