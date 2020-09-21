@@ -72,6 +72,12 @@ module FlightScheduler
     MAGIC_BATCH_SLOP = Slop::Options.new.tap do |slop|
       slop.parser.config[:suppress_errors] = true
       slop.string '-N', '--nodes', 'The minimum number of required nodes'
+      slop.string '-a', '--array', <<~EOF
+        Submit a job array, multiple jobs to be  executed  with  identical
+        parameters.  The indexes  specification  identifies  what  array index
+        values should be used. Multiple values may be specified using a comma
+        separated list, e.g., --array=1,2,3,4.
+      EOF
     end
 
     create_command 'batch', 'SCRIPT [ARGS...]' do |c|

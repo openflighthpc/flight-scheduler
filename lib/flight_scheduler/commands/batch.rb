@@ -35,6 +35,7 @@ module FlightScheduler
         job = JobsRecord.create(arguments: args[1..-1],
                                 script_name: File.basename(script_path),
                                 script: script_body,
+                                array: merged_opts.array,
                                 min_nodes: min_nodes,
                                 connection: connection)
         puts "Submitted batch job #{job.id}"
