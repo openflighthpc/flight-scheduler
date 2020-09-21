@@ -37,10 +37,10 @@ module FlightScheduler
       register_column(header: 'ST') { |j| j.state }
       register_column(header: 'TIME') { |_| 'TBD' }
       register_column(header: 'NODES') { |j| j.min_nodes || j.attributes[:'min-nodes'] }
-      register_column(header: 'NODELIST(REASON)') { |j| j.attributes[:'allocated-nodes'].join(',') }
+      register_column(header: 'NODELIST(REASON)') { |j| j.relationships[:'allocated-nodes'].map(&:name).join(',') }
 
       def run
-        records = JobsRecord.fetch_all(includes: ['partition'], connection: connection)
+        records = JobsRecord.fetch_all(includes: ['partition', 'allocated-nodes'], connection: connection)
         puts self.class.build_output.render(*records)
       end
     end
