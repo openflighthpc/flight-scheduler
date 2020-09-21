@@ -32,11 +32,11 @@ module FlightScheduler
 
       # Wraps the partition object after it's nodes have been filtered by a state
       class PartitionProxy < SimpleDelegator
-        attr_reader :state, :filtered_nodes
+        attr_reader :state, :nodes
 
-        def initialize(partition, state: 'IDLE', filtered_nodes: [])
+        def initialize(partition, state: 'IDLE', nodes: [])
           @state = state
-          @filtered_nodes = filtered_nodes
+          @nodes = nodes
           super(partition)
         end
       end
@@ -44,9 +44,9 @@ module FlightScheduler
       register_column(header: 'PARTITION') { |p| p.name }
       register_column(header: 'AVAIL') { |_| 'TBD' }
       register_column(header: 'TIMELIMIT') { |_| 'TBD' }
-      register_column(header: 'NODES') { |p| p.filtered_nodes.length }
+      register_column(header: 'NODES') { |p| p.nodes.length }
       register_column(header: 'STATE') { |p| p.state }
-      register_column(header: 'NODELIST') { |p| p.filtered_nodes.map(&:name).join(',') }
+      register_column(header: 'NODELIST') { |p| p.nodes.map(&:name).join(',') }
 
       def run
         records = PartitionsRecord.fetch_all(includes: ['nodes'], connection: connection)
@@ -60,7 +60,7 @@ module FlightScheduler
             PartitionProxy.new(record)
           else
             hash.map do |state, nodes|
-              PartitionProxy.new(record, state: state, filtered_nodes: nodes)
+              PartitionProxy.new(record, state: state, nodes: nodes)
             end
           end
         end.flatten
