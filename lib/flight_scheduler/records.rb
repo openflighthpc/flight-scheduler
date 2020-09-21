@@ -38,6 +38,8 @@ module FlightScheduler
 
   class PartitionsRecord < BaseRecord
     attributes :name, :nodes
+
+    has_many :nodes, class_name: 'FlightScheduler::NodesRecord'
   end
 
   class NodesRecord < BaseRecord

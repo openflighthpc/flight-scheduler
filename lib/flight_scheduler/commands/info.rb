@@ -35,10 +35,10 @@ module FlightScheduler
       register_column(header: 'TIMELIMIT') { |_| 'TBD' }
       register_column(header: 'NODES') { |p| p.nodes.length }
       register_column(header: 'STATE') { |_| 'TBD' }
-      register_column(header: 'NODELIST') { |p| p.nodes.join(',') }
+      register_column(header: 'NODELIST') { |p| p.nodes.map(&:name).join(',') }
 
       def run
-        records = PartitionsRecord.fetch_all(connection: connection)
+        records = PartitionsRecord.fetch_all(includes: ['nodes'], connection: connection)
         puts self.class.build_output.render(*records)
       end
     end
