@@ -38,12 +38,19 @@ module FlightScheduler
 
   class PartitionsRecord < BaseRecord
     attributes :name, :nodes
+
+    has_many :nodes, class_name: 'FlightScheduler::NodesRecord'
+  end
+
+  class NodesRecord < BaseRecord
+    attributes :name, :state
   end
 
   class JobsRecord < BaseRecord
-    attributes :min_nodes, :script, :arguments
+    attributes :min_nodes, :script, :arguments, :state
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
+    has_many :'allocated-nodes', class_name: 'FlightScheduler::NodesRecord'
   end
 end
 
