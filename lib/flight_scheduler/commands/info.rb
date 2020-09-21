@@ -30,16 +30,41 @@ module FlightScheduler
     class Info < Command
       extend OutputMode::TLDR::Index
 
+      # Wraps the partition object after it's nodes have been filtered by a state
+      class PartitionProxy < SimpleDelegator
+        attr_reader :state, :filtered_nodes
+
+        def initialize(partition, state: 'IDLE', filtered_nodes: [])
+          @state = state
+          @filtered_nodes = filtered_nodes
+          super(partition)
+        end
+      end
+
       register_column(header: 'PARTITION') { |p| p.name }
       register_column(header: 'AVAIL') { |_| 'TBD' }
       register_column(header: 'TIMELIMIT') { |_| 'TBD' }
-      register_column(header: 'NODES') { |p| p.nodes.length }
-      register_column(header: 'STATE') { |_| 'TBD' }
-      register_column(header: 'NODELIST') { |p| p.nodes.map(&:name).join(',') }
+      register_column(header: 'NODES') { |p| p.filtered_nodes.length }
+      register_column(header: 'STATE') { |p| p.state }
+      register_column(header: 'NODELIST') { |p| p.filtered_nodes.map(&:name).join(',') }
 
       def run
         records = PartitionsRecord.fetch_all(includes: ['nodes'], connection: connection)
-        puts self.class.build_output.render(*records)
+        record_proxies = records.map do |record|
+          # Collect the nodes by their state
+          hash = Hash.new { |h, v| h[v] = [] }
+          record.nodes.each { |node| hash[node.state] << node }
+
+          # Create a proxy object for each partition-state combination
+          if hash.empty?
+            PartitionProxy.new(record)
+          else
+            hash.map do |state, nodes|
+              PartitionProxy.new(record, state: state, filtered_nodes: nodes)
+            end
+          end
+        end.flatten
+        puts self.class.build_output.render(*record_proxies)
       end
     end
   end

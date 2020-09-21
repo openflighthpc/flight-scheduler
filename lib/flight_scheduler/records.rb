@@ -43,7 +43,7 @@ module FlightScheduler
   end
 
   class NodesRecord < BaseRecord
-    attributes :name
+    attributes :name, :state
   end
 
   class JobsRecord < BaseRecord
