@@ -39,7 +39,9 @@ module FlightScheduler
       register_column(header: 'NODES') { |j| j.min_nodes || j.attributes[:'min-nodes'] }
       register_column(header: 'NODELIST(REASON)') do |job|
         nodes = job.relationships[:'allocated-nodes'].map(&:name).join(',')
-        if job.reason
+        if job.reason && nodes.empty?
+          "(#{job.reason})"
+        elsif job.reason
           "#{nodes} (#{job.reason})"
         else
           nodes
