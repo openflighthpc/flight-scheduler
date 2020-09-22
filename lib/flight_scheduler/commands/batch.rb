@@ -33,7 +33,8 @@ module FlightScheduler
       def run
         ensure_shebang
         job = JobsRecord.create(arguments: args[1..-1],
-                                script: script_path,
+                                script_name: File.basename(script_path),
+                                script: script_body,
                                 min_nodes: min_nodes,
                                 connection: connection)
         puts "Submitted batch job #{job.id}"
@@ -79,14 +80,16 @@ module FlightScheduler
       def read_magic_arguments_string
         args = []
         magic_comment_marker = "##{opts.comment_prefix} "
-        File.open(script_path) do |f|
-          while line = f.gets
-            if line.start_with?(magic_comment_marker)
-              args << line.sub(magic_comment_marker, '').chomp
-            end
+        script_body.each_line do |line|
+          if line.start_with?(magic_comment_marker)
+            args << line.sub(magic_comment_marker, '').chomp
           end
         end
         args.join(' ')
+      end
+
+      def script_body
+        @script_body ||= File.read script_path
       end
 
       def script_path
