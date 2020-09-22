@@ -37,7 +37,16 @@ module FlightScheduler
       register_column(header: 'ST') { |j| j.state }
       register_column(header: 'TIME') { |_| 'TBD' }
       register_column(header: 'NODES') { |j| j.min_nodes || j.attributes[:'min-nodes'] }
-      register_column(header: 'NODELIST(REASON)') { |j| j.relationships[:'allocated-nodes'].map(&:name).join(',') }
+      register_column(header: 'NODELIST(REASON)') do |job|
+        nodes = job.relationships[:'allocated-nodes'].map(&:name).join(',')
+        if job.reason && nodes.empty?
+          "(#{job.reason})"
+        elsif job.reason
+          "#{nodes} (#{job.reason})"
+        else
+          nodes
+        end
+      end
 
       def run
         records = JobsRecord.fetch_all(includes: ['partition', 'allocated-nodes'], connection: connection)
