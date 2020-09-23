@@ -49,6 +49,7 @@ module FlightScheduler
   class JobsRecord < BaseRecord
     attributes :arguments,
       :array,
+      :interactive,
       :min_nodes,
       :reason,
       :script,

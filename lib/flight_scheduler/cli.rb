@@ -96,6 +96,11 @@ module FlightScheduler
       c.summary = 'List all current jobs'
     end
 
+    create_command 'run', 'EXECUTABLE' do |c|
+      c.summary = 'XXX'
+      c.slop.bool '--pty'
+    end
+
     if Config::CACHE.development?
       create_command 'console' do |c|
         require_relative 'commands'
