@@ -97,8 +97,12 @@ module FlightScheduler
     end
 
     create_command 'run', 'EXECUTABLE' do |c|
-      c.summary = 'XXX'
+      c.summary = 'Start an interactive session'
       c.slop.bool '--pty'
+    end
+
+    create_command 'connect', 'JOBID' do |c|
+      c.summary = 'Connect to an interactive session'
     end
 
     if Config::CACHE.development?
