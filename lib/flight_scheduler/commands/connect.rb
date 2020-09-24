@@ -38,6 +38,7 @@ module FlightScheduler
         console = IO.console
         send_socket_output_to_console(socket, console)
         while input = console.gets
+          Config::CACHE.logger.info("Processing input #{input.inspect}")
           socket.write(input)
           socket.flush
           send_socket_output_to_console(socket, console)
@@ -49,11 +50,13 @@ module FlightScheduler
       private
 
       def send_socket_output_to_console(socket, console)
+        sleep 0.5
         while socket.ready?
           output = socket.read(socket.nread)
           Config::CACHE.logger.info "=== output: #{(output).inspect rescue $!.message}"
-          console.write(output)
+          console.write(output.chomp)
           console.flush
+          sleep 0.5
         end
       end
     end
