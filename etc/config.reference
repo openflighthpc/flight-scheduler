@@ -83,4 +83,4 @@ config :log_path, default: "#{xdg.cache_home}/flight/log/share/scheduler.log",
 # Set at which severity the application will log
 # Valid levels: 'disabled', 'fatal', 'error', 'warn', 'info', 'debug'
 # ==============================================================================
-config :log_level, default: 'error'
+config :log_level, default: 'info'

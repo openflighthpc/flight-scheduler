@@ -34,6 +34,8 @@ module FlightScheduler
     class Connect < Command
       def run
         socket = TCPSocket.new('localhost', 6308)
+        # socket.write(args[0])
+        # socket.flush
         Config::CACHE.logger.info('Connected to interactive session')
         console = IO.console
         send_socket_output_to_console(socket, console)
