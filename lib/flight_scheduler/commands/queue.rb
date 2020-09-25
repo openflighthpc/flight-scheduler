@@ -42,15 +42,17 @@ module FlightScheduler
         end
       end
       register_column(header: 'PARTITION') do |r|
-        (r.is_a?(TasksRecord) ? r.job : r).partition.name
+        r.job.partition.name
       end
       register_column(header: 'NAME') do |r|
-        r.attributes[:'script-name']
+        r.job.attributes[:'script-name']
       end
       register_column(header: 'USER') { |_| 'TBD' }
       register_column(header: 'ST') { |j| j.state }
       register_column(header: 'TIME') { |_| 'TBD' }
-      register_column(header: 'NODES') { |j| j.min_nodes || j.attributes[:'min-nodes'] }
+      register_column(header: 'NODES') do |j|
+        j.attributes[:'min-nodes'] unless j.attributes[:'last-index']
+      end
       register_column(header: 'NODELIST(REASON)') do |record|
         nodes = record.relationships[:'allocated-nodes'].map(&:name).join(',')
         if record.is_a?(TasksRecord)
@@ -72,7 +74,7 @@ module FlightScheduler
           if record.attributes[:'last-index']
             [record, record.relationships[:'running-tasks'].each { |t| t.job = record }]
           else
-            record_proxy
+            record
           end
         end.flatten.reject(&:nil?)
         puts self.class.build_output.render(*jobs_and_tasks)

@@ -47,6 +47,11 @@ module FlightScheduler
   end
 
   class JobsRecord < BaseRecord
+    # Used to abstract the difference between tasks and jobs
+    def job
+      self
+    end
+
     attributes :arguments,
       :array,
       :min_nodes,
