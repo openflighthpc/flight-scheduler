@@ -28,14 +28,35 @@
 require 'socket'
 require 'io/wait'
 require 'io/console'
+require 'json'
 
 module FlightScheduler
   module Commands
     class Connect < Command
       def run
+        job = JobsRecord.fetch_all(
+          includes: ['allocated-nodes'],
+          connection: connection,
+          # url_opts: { id: args[0] },
+        ).detect { |j| j.id == args[0] }
+
+::STDERR.puts "=== job: #{(job).inspect rescue $!.message}"
+::STDERR.puts "=== job.relationships[:'allocated-nodes']: #{(job.relationships[:'allocated-nodes']).inspect rescue $!.message}"
+::STDERR.puts "=== job.attributes[:'script-name']: #{(job.attributes[:'script-name']).inspect rescue $!.message}"
+
         socket = TCPSocket.new('localhost', 6308)
+        message = {
+          arguments: job.arguments,
+          command: 'RUN_INTERACTIVE_JOB',
+          env: {},
+          executable: job.attributes[:'script-name'],
+          job_id: job.id,
+        }
+::STDERR.puts "=== message: #{(message).inspect rescue $!.message}"
+::STDERR.puts "=== message.to_json: #{(message.to_json).inspect rescue $!.message}"
+        socket.write(message.to_json)
         # socket.write(args[0])
-        # socket.flush
+        socket.flush
         Config::CACHE.logger.info('Connected to interactive session')
         console = IO.console
         send_socket_output_to_console(socket, console)
@@ -45,6 +66,8 @@ module FlightScheduler
           socket.flush
           send_socket_output_to_console(socket, console)
         end
+      rescue
+::STDERR.puts "=== $!: #{($!).inspect rescue $!.message}"
       ensure
         socket.close if socket
       end
