@@ -33,10 +33,14 @@ module FlightScheduler
       INCLUDES = ['partition', 'allocated-nodes', 'running-tasks', 'running-tasks.allocated-nodes']
 
       register_column(header: 'JOBID') do |r|
-        if r.is_a?(JobsRecord) && r.attributes[:'last-index']
-          "#{r.id}[#{r.attributes[:'next-index']}-#{r.attributes[:'last-index']}]"
-        elsif r.is_a? JobsRecord
-          r.id
+        if r.is_a?(JobsRecord)
+          if r.attributes[:'next-index'].nil?
+            r.id
+          elsif r.attributes[:'next-index'] == r.attributes[:'last-index']
+            "#{r.id}[#{r.attributes[:'next-index']}]"
+          else
+            "#{r.id}[#{r.attributes[:'next-index']}-#{r.attributes[:'last-index']}]"
+          end
         else
           "#{r.job.id}[#{r.index}]"
         end
