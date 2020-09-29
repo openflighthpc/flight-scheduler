@@ -29,6 +29,8 @@ require 'socket'
 require 'io/wait'
 require 'io/console'
 require 'json'
+require 'async/http/endpoint'
+require 'async/websocket/client'
 
 module FlightScheduler
   module Commands
@@ -40,48 +42,74 @@ module FlightScheduler
           # url_opts: { id: args[0] },
         ).detect { |j| j.id == args[0] }
 
-::STDERR.puts "=== job: #{(job).inspect rescue $!.message}"
-::STDERR.puts "=== job.relationships[:'allocated-nodes']: #{(job.relationships[:'allocated-nodes']).inspect rescue $!.message}"
-::STDERR.puts "=== job.attributes[:'script-name']: #{(job.attributes[:'script-name']).inspect rescue $!.message}"
+        daemon_url = "http://127.0.0.1:6308/v0/"
+        endpoint = Async::HTTP::Endpoint.parse(daemon_url)
 
-        socket = TCPSocket.new('localhost', 6308)
-        message = {
-          arguments: job.arguments,
-          command: 'RUN_INTERACTIVE_JOB',
-          env: {},
-          executable: job.attributes[:'script-name'],
-          job_id: job.id,
-        }
-::STDERR.puts "=== message: #{(message).inspect rescue $!.message}"
-::STDERR.puts "=== message.to_json: #{(message.to_json).inspect rescue $!.message}"
-        socket.write(message.to_json)
-        # socket.write(args[0])
-        socket.flush
-        Config::CACHE.logger.info('Connected to interactive session')
-        console = IO.console
-        send_socket_output_to_console(socket, console)
-        while input = console.gets
-          Config::CACHE.logger.info("Processing input #{input.inspect}")
-          socket.write(input)
-          socket.flush
-          send_socket_output_to_console(socket, console)
+        Async do |task|
+          Async::WebSocket::Client.connect(endpoint) do |connection|
+            # Async.logger.info("Connected to #{controller_url.inspect}")
+            message = {
+              arguments: job.arguments,
+              command: 'RUN_INTERACTIVE_JOB',
+              env: {},
+              executable: job.attributes[:'script-name'],
+              job_id: job.id,
+            }
+            connection.write(message)
+            connection.flush
+            # Config::CACHE.logger.info('Connected to interactive session')
+            message = connection.read
+# ::STDERR.puts "=== message: #{(message).inspect rescue $!.message}"
+            if message[:command] == 'INTERACTIVE_JOB_STARTED'
+              STDERR.puts('Connected to interactive session')
+              console = IO.console
+
+              Async do
+# ::STDERR.puts "=== 1: #{(1).inspect rescue $!.message}"
+                while message = connection.read
+                  # ::STDERR.puts "=== message: #{(message).inspect rescue $!.message}"
+                  if message[:command] == 'output'
+                    console.write(message[:output])
+                    console.flush
+                  end
+                end
+                ::STDERR.puts "=== 1 ends"
+              end
+
+              Async do
+# ::STDERR.puts "=== 2: #{(2).inspect rescue $!.message}"
+                while input = console.gets
+# ::STDERR.puts "=== input: #{(input).inspect rescue $!.message}"
+                  connection.write({command: 'input', input: input})
+                  connection.flush
+                end
+# ::STDERR.puts "=== 2 ends: #{(2).inspect rescue $!.message}"
+              end
+
+            else
+              STDERR.puts('Failed to connect to interactive session')
+            end
+            # send_socket_output_to_console(connection, console)
+            # while input = console.gets
+            #   # Config::CACHE.logger.info("Processing input #{input.inspect}")
+            #   connection.write({command: 'input', input: input})
+            #   connection.flush
+            #   send_socket_output_to_console(connection, console)
+            # end
+          end
         end
       rescue
-::STDERR.puts "=== $!: #{($!).inspect rescue $!.message}"
-      ensure
-        socket.close if socket
+        ::STDERR.puts "=== $!: #{($!).inspect rescue $!.message}"
       end
 
       private
 
       def send_socket_output_to_console(socket, console)
         sleep 0.5
-        while socket.ready?
-          output = socket.read(socket.nread)
-          Config::CACHE.logger.info "=== output: #{(output).inspect rescue $!.message}"
-          console.write(output.chomp)
+        message = socket.read
+        if message[:command] == 'output'
+          console.write(message[:output])
           console.flush
-          sleep 0.5
         end
       end
     end

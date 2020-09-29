@@ -1,12 +1,32 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    async (1.26.2)
+      console (~> 1.0)
+      nio4r (~> 2.3)
+      timers (~> 4.1)
+    async-http (0.52.5)
+      async (~> 1.25)
+      async-io (~> 1.28)
+      async-pool (~> 0.2)
+      protocol-http (~> 0.20.0)
+      protocol-http1 (~> 0.13.0)
+      protocol-http2 (~> 0.14.0)
+    async-io (1.30.1)
+      async (~> 1.14)
+    async-pool (0.3.2)
+      async (~> 1.25)
+    async-websocket (0.16.0)
+      async-http (~> 0.51)
+      async-io (~> 1.23)
+      protocol-websocket (~> 0.7.0)
     byebug (11.1.1)
     coderay (1.1.2)
     commander-openflighthpc (2.2.0)
       highline (> 1.7.2)
       paint (~> 2.1.0)
       slop (~> 4.8)
+    console (1.9.0)
     equatable (0.6.1)
     faraday (0.17.3)
       multipart-post (>= 1.2, < 3)
@@ -17,6 +37,7 @@ GEM
     method_source (0.9.2)
     multipart-post (2.1.1)
     necromancer (0.6.0)
+    nio4r (2.5.4)
     output_mode (1.1.1)
       pastel (>= 0.7)
       tty-color (>= 0.5)
@@ -25,6 +46,16 @@ GEM
     pastel (0.7.4)
       equatable (~> 0.6)
       tty-color (~> 0.5)
+    protocol-hpack (1.4.2)
+    protocol-http (0.20.1)
+    protocol-http1 (0.13.1)
+      protocol-http (~> 0.19)
+    protocol-http2 (0.14.1)
+      protocol-hpack (~> 1.4)
+      protocol-http (~> 0.18)
+    protocol-websocket (0.7.5)
+      protocol-http (~> 0.2)
+      protocol-http1 (~> 0.2)
     pry (0.12.2)
       coderay (~> 1.1.0)
       method_source (~> 0.9.0)
@@ -40,6 +71,7 @@ GEM
       unicode-display_width (~> 1.5)
       unicode_utils (~> 1.4)
     strings-ansi (0.2.0)
+    timers (4.3.2)
     tty-color (0.5.2)
     tty-screen (0.8.1)
     tty-table (0.11.0)
@@ -56,6 +88,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  async-websocket
   commander-openflighthpc
   hashie
   output_mode

@@ -31,6 +31,7 @@ source "https://rubygems.org"
 
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
+gem 'async-websocket'
 gem 'commander-openflighthpc'
 gem 'hashie'
 gem 'output_mode'
