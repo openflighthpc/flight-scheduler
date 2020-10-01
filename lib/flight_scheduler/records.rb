@@ -47,6 +47,11 @@ module FlightScheduler
   end
 
   class JobsRecord < BaseRecord
+    # Used to abstract the difference between tasks and jobs
+    def job
+      self
+    end
+
     attributes :arguments,
       :array,
       :min_nodes,
@@ -56,6 +61,15 @@ module FlightScheduler
       :state
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
+    has_many :'allocated-nodes', class_name: 'FlightScheduler::NodesRecord'
+
+    has_many :'running-tasks', class_name: 'FlightScheduler::TasksRecord'
+  end
+
+  class TasksRecord < BaseRecord
+    attributes :state, :min_nodes, :index
+
+    has_one :job, class_name: 'FlightScheduler::JobsRecord'
     has_many :'allocated-nodes', class_name: 'FlightScheduler::NodesRecord'
   end
 end

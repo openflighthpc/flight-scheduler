@@ -30,27 +30,58 @@ module FlightScheduler
     class Queue < Command
       extend OutputMode::TLDR::Index
 
-      register_column(header: 'JOBID') { |j| j.id }
-      register_column(header: 'PARTITION') { |j| j.partition.name }
-      register_column(header: 'NAME') { |j| j.attributes[:'script-name'] }
+      INCLUDES = ['partition', 'allocated-nodes', 'running-tasks', 'running-tasks.allocated-nodes']
+
+      register_column(header: 'JOBID') do |r|
+        if r.is_a?(JobsRecord)
+          if r.attributes[:'next-index'].nil?
+            r.id
+          elsif r.attributes[:'next-index'] == r.attributes[:'last-index']
+            "#{r.id}[#{r.attributes[:'next-index']}]"
+          else
+            "#{r.id}[#{r.attributes[:'next-index']}-#{r.attributes[:'last-index']}]"
+          end
+        else
+          "#{r.job.id}[#{r.index}]"
+        end
+      end
+      register_column(header: 'PARTITION') do |r|
+        r.job.partition.name
+      end
+      register_column(header: 'NAME') do |r|
+        r.job.attributes[:'script-name']
+      end
       register_column(header: 'USER') { |_| 'TBD' }
       register_column(header: 'ST') { |j| j.state }
       register_column(header: 'TIME') { |_| 'TBD' }
-      register_column(header: 'NODES') { |j| j.min_nodes || j.attributes[:'min-nodes'] }
-      register_column(header: 'NODELIST(REASON)') do |job|
-        nodes = job.relationships[:'allocated-nodes'].map(&:name).join(',')
-        if job.reason && nodes.empty?
-          "(#{job.reason})"
-        elsif job.reason
-          "#{nodes} (#{job.reason})"
-        else
+      register_column(header: 'NODES') do |j|
+        j.attributes[:'min-nodes'] unless j.attributes[:'last-index']
+      end
+      register_column(header: 'NODELIST(REASON)') do |record|
+        nodes = record.relationships[:'allocated-nodes'].map(&:name).join(',')
+        if record.is_a?(TasksRecord)
           nodes
+        else
+          if record.reason && nodes.empty?
+            "(#{record.reason})"
+          elsif record.reason
+            "#{nodes} (#{record.reason})"
+          else
+            nodes
+          end
         end
       end
 
       def run
-        records = JobsRecord.fetch_all(includes: ['partition', 'allocated-nodes'], connection: connection)
-        puts self.class.build_output.render(*records)
+        records = JobsRecord.fetch_all(includes: INCLUDES, connection: connection)
+        jobs_and_tasks = records.map do |record|
+          if record.attributes[:'last-index']
+            [record, record.relationships[:'running-tasks'].each { |t| t.job = record }]
+          else
+            record
+          end
+        end.flatten.reject(&:nil?)
+        puts self.class.build_output.render(*jobs_and_tasks)
       end
     end
   end
