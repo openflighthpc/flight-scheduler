@@ -98,6 +98,13 @@ module FlightScheduler
       c.summary = 'List all current jobs'
     end
 
+    create_command 'alloc' do |c|
+      c.summary = 'Obtain a resource allocation'
+      c.slop.string '-N', '--nodes',
+                    'The minimum number of required nodes',
+                    default: 1
+    end
+
     if Config::CACHE.development?
       create_command 'console' do |c|
         require_relative 'commands'
