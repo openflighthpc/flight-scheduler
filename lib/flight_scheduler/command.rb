@@ -31,6 +31,7 @@ require_relative 'errors'
 require 'faraday'
 require 'faraday_middleware'
 require 'output_mode'
+require 'etc'
 
 module FlightScheduler
   class Command
@@ -69,6 +70,7 @@ module FlightScheduler
 
     def connection
       @connection ||= Faraday.new(url: Config::CACHE.base_url, headers: headers) do |c|
+        c.basic_auth Etc.getpwuid(Process.uid).name, ''
         c.use Faraday::Response::Logger, Config::CACHE.logger, { bodies: true } do |l|
           l.filter(/(Authorization:)(.*)/, '\1 [REDACTED]')
         end
