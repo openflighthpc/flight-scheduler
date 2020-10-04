@@ -37,6 +37,8 @@ module FlightScheduler
                                 script: script_body,
                                 array: merged_opts.array,
                                 min_nodes: min_nodes,
+                                stdout_path: opts.output,
+                                stderr_path: opts.error,
                                 connection: connection)
         puts "Submitted batch job #{job.id}"
       end

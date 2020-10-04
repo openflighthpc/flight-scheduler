@@ -78,6 +78,8 @@ module FlightScheduler
         values should be used. Multiple values may be specified using a comma
         separated list, e.g., --array=1,2,3,4.
       EOF
+      slop.string '-o', '--output', 'Redirect STDOUT to this path'
+      slop.string '-e', '--error', 'Redirect STDERR to this path'
     end
 
     create_command 'batch', 'SCRIPT [ARGS...]' do |c|
