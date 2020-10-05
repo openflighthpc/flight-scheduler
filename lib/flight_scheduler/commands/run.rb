@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #==============================================================================
 # Copyright (C) 2020-present Alces Flight Ltd.
 #
@@ -27,19 +25,28 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 
-source "https://rubygems.org"
+module FlightScheduler
+  module Commands
+    class Run < Command
+      def run
+        job_step = JobStepsRecord.create(
+          arguments: args[1..-1],
+          job_id: job_id,
+          path: resolve_path(args.first),
+          connection: connection,
+        )
+        puts "Job step #{job_step.id} added"
+      end
 
-git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
-
-gem 'activesupport', require: 'active_support'
-gem 'commander-openflighthpc'
-gem 'hashie'
-gem 'output_mode'
-gem 'simple_jsonapi_client'
-gem 'xdg'
-
-group :development do
-  gem 'pry'
-  gem 'pry-byebug'
+      def job_id
+        if opts.jobid
+          opts.jobid
+        else
+          raise InputError, <<~ERROR.chomp
+            --jobid must be given
+          ERROR
+        end
+      end
+    end
+  end
 end
-

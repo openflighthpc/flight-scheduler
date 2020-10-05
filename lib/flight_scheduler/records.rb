@@ -26,11 +26,15 @@
 #===============================================================================
 
 require 'simple_jsonapi_client'
+require 'active_support/inflector'
 
 module FlightScheduler
   class BaseRecord < SimpleJSONAPIClient::Base
     def self.inherited(base)
-      base.const_set('TYPE', base.name.split('::').last.sub(/Record\Z/, '').downcase)
+      base.const_set(
+        'TYPE',
+        base.name.split('::').last.sub(/Record\Z/, '').underscore.dasherize
+      )
       base.const_set('COLLECTION_URL', "/#{Config::CACHE.api_prefix}/#{base::TYPE}")
       base.const_set('INDIVIDUAL_URL', "#{base::COLLECTION_URL}/%{id}")
     end
@@ -68,6 +72,14 @@ module FlightScheduler
     has_many :'running-tasks', class_name: 'FlightScheduler::TasksRecord'
   end
 
+  class JobStepsRecord < BaseRecord
+    attributes :arguments,
+      :path,
+      :job_id
+
+    has_one :job, class_name: 'FlightScheduler::JobsRecord'
+  end
+
   class TasksRecord < BaseRecord
     attributes :state, :min_nodes, :index
 
@@ -75,4 +87,3 @@ module FlightScheduler
     has_many :'allocated-nodes', class_name: 'FlightScheduler::NodesRecord'
   end
 end
-

@@ -79,5 +79,30 @@ module FlightScheduler
         c.adapter :net_http
       end
     end
+
+    def resolve_path(path)
+      # Handle absolute paths and explicit relative paths
+      if File.absolute_path?(path) || path[0] == '.'
+        path = File.expand_path(path)
+        File.exists?(path) ? path : raise(MissingError, "Could not locate: #{path}")
+        # Handle implicit relative paths
+      elsif File.exists?(p = File.expand_path(path))
+        p
+        # Preform a PATH lookup as a fallback
+      else
+        # Do not assume PATH is correct, only consider absolute paths to be valid
+        roots = ENV.fetch('PATH', '').split(':').select do |root|
+          File.absolute_path?(root.to_s)
+        end
+
+        # Search for the root directory path
+        root = roots.find do |r|
+          File.exists? File.join(r, path)
+        end
+
+        # Return the absolute path or error
+        root ? File.join(root, path) : raise(MissingError, "Could not locate: #{path}")
+      end
+    end
   end
 end

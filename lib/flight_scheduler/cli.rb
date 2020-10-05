@@ -105,6 +105,12 @@ module FlightScheduler
                     default: 1
     end
 
+    create_command 'run', 'EXECUTABLE [ARGS...]' do |c|
+      c.summary = 'Run EXECUTABLE under an already allocated job'
+      c.slop.string '--jobid',
+                    'Run under an already allocated job'
+    end
+
     if Config::CACHE.development?
       create_command 'console' do |c|
         require_relative 'commands'
