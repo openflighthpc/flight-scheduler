@@ -28,6 +28,63 @@
 module FlightScheduler
   module Commands
     class Run < Command
+      class Connection
+        def initialize(execution)
+          @execution = execution
+          @read_pipe, @write_pipe = IO.pipe
+        end
+
+        def write(data)
+          @write_pipe.write(data)
+        end
+
+        def flush
+          @write_pipe.flush
+        end
+
+        def close
+          @write_pipe.close_write
+        end
+
+        def join
+          @thread.join
+        end
+
+        def connect_to_command
+          Thread.report_on_exception = true
+          @thread = Thread.new do
+            connection = TCPSocket.new(@execution.node, @execution.port)
+
+            input_thread = Thread.new do
+              begin
+                IO.copy_stream(@read_pipe, connection)
+              rescue IOError, Errno::EBADF, Errno::EPIPE, Errno::EIO
+                # These exceptions are not unexpected.  We just want to
+                # silence them.
+              ensure
+                connection.close_write
+              end
+            end
+            output_thread = Thread.new do
+              begin
+                IO.copy_stream(connection, STDOUT)
+              rescue IOError, Errno::EBADF, Errno::EPIPE, Errno::EIO
+              ensure
+                # If the connection is closed by the server, we'll end up here.
+                # However, input_thread will remain blocked at the
+                # `IO.copy_stream` call.  To exit cleanly we need to kill the
+                # thread.
+                input_thread.kill
+              end
+            end
+            input_thread.join
+            output_thread.join
+          ensure
+            connection.close if connection
+          end
+        end
+      end
+
       def run
         job_step = JobStepsRecord.create(
           arguments: args[1..-1],
@@ -44,51 +101,46 @@ module FlightScheduler
           url_opts: { id: "#{job_id}.#{job_step.id}" },
         )
 
+        input_thread = nil
+
         puts "Job step running"
-        job_step.executions.each do |execution|
-          connect_to_session(execution.node, execution.port)
+        connections = job_step.executions.map do |execution|
+          Connection.new(execution).tap do |conn|
+            conn.connect_to_command
+          end
         end
-      end
-
-      def connect_to_session(hostname, port)
-        begin
-          Thread.report_on_exception = false
-          connection = TCPSocket.new(hostname, port)
-
-          input_thread = Thread.new do
-            begin
-              IO.copy_stream(STDIN, connection)
-            rescue IOError, Errno::EBADF
-            ensure
-              connection.close_write
+        input_thread = Thread.new do
+          begin
+            loop do
+              if STDIN.eof? || STDIN.closed?
+                break
+              end
+              input = STDIN.gets
+              connections.each do |conn|
+                conn.write(input)
+                conn.flush
+              end
             end
+          rescue IOError, Errno::EBADF, Errno::EPIPE, Errno::EIO
+            # These exceptions are not unexpected.  We just want to
+            # silence them.
+          ensure
+            connections.each(&:close)
           end
-          output_thread = Thread.new do
-            begin
-              IO.copy_stream(connection, STDOUT)
-            rescue IOError, Errno::EBADF
-            ensure
-              # If the connection is closed by the server, we'll end up here.
-              # However, input_thread will remain blocked at the
-              # `IO.copy_stream` call.  To exit cleanly we need to kill the
-              # thread.
-              input_thread.kill
-            end
-          end
-
-          input_thread.join
-          output_thread.join
-
-        rescue Interrupt
-          if Kernel.const_defined?(:Paint)
-            $stderr.puts "\n#{Paint['WARNING', :underline, :yellow]}: Cancelled by user"
-          else
-            $stderr.puts "\nWARNING: Cancelled by user"
-          end
-          exit(130)
-        ensure
-          connection.close if connection
         end
+
+        connections.each(&:join)
+        input_thread.kill if input_thread && input_thread.alive?
+      rescue Interrupt
+        if Kernel.const_defined?(:Paint)
+          $stderr.puts "\n#{Paint['WARNING', :underline, :yellow]}: Cancelled by user"
+        else
+          $stderr.puts "\nWARNING: Cancelled by user"
+        end
+        exit(130)
+
+      ensure
+        connections.each(&:close) if connections
       end
 
       def job_id
