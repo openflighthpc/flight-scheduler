@@ -41,6 +41,8 @@ module FlightScheduler
       def job_id
         if opts.jobid
           opts.jobid
+        elsif ENV['JOB_ID']
+          ENV['JOB_ID']
         else
           raise InputError, <<~ERROR.chomp
             --jobid must be given
