@@ -24,22 +24,17 @@
 # For more information on Flight Scheduler, please visit:
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
+require 'io/console'
 
 module FlightScheduler
   module Commands
     class Run < Command
-      class Connection
+      class StepdConnection
+        attr_reader :write_pipe
+
         def initialize(execution)
           @execution = execution
           @read_pipe, @write_pipe = IO.pipe
-        end
-
-        def write(data)
-          @write_pipe.write(data)
-        end
-
-        def flush
-          @write_pipe.flush
         end
 
         def close
@@ -90,6 +85,7 @@ module FlightScheduler
           arguments: args[1..-1],
           job_id: job_id,
           path: resolve_path(args.first),
+          pty: pty?,
           connection: connection,
         )
         puts "Job step #{job_step.id} added"
@@ -104,36 +100,26 @@ module FlightScheduler
         input_thread = nil
 
         puts "Job step running"
+        if pty? && job_step.executions.length > 1
+          # If we're running a PTY session, we expect to have only a single
+          # execution running.  Whilst it might be possible to send STDIN to
+          # all sessions and have STDOUT/STDERR come back from only the first,
+          # we don't currently support this.
+          raise "PTY session on multiple nodes is not supported."
+        end
         connections = job_step.executions.map do |execution|
-          Connection.new(execution).tap do |conn|
+          StepdConnection.new(execution).tap do |conn|
             conn.connect_to_command
           end
         end
-        input_thread = Thread.new do
-          begin
-            loop do
-              if STDIN.eof? || STDIN.closed?
-                break
-              end
-              input = STDIN.gets
-              connections.each do |conn|
-                conn.write(input)
-                conn.flush
-              end
-            end
-          rescue IOError, Errno::EBADF, Errno::EPIPE, Errno::EIO
-            # These exceptions are not unexpected.  We just want to
-            # silence them.
-          ensure
-            connections.each(&:close)
-          end
-        end
-
+        input_thread = create_input_thread(connections)
         connections.each(&:join)
         input_thread.kill if input_thread && input_thread.alive?
       ensure
         connections.each(&:close) if connections
       end
+
+      private
 
       def job_id
         if opts.jobid
@@ -144,6 +130,42 @@ module FlightScheduler
           raise InputError, <<~ERROR.chomp
             --jobid must be given
           ERROR
+        end
+      end
+
+      def pty?
+        !!opts.pty
+      end
+
+      def create_input_thread(connections)
+        if pty?
+          # Currently we only support PTY sessions on a single node.
+          write_pipe = connections.first.write_pipe
+          Thread.new do
+            STDIN.raw do |stdin|
+              IO.copy_stream(stdin, write_pipe)
+            end
+          end
+        else
+          Thread.new do
+            begin
+              loop do
+                if STDIN.eof? || STDIN.closed?
+                  break
+                end
+                input = STDIN.gets
+                connections.each do |conn|
+                  conn.write_pipe.write(input)
+                  conn.write_pipe.flush
+                end
+              end
+            rescue IOError, Errno::EBADF, Errno::EPIPE, Errno::EIO
+              # These exceptions are not unexpected.  We just want to
+              # silence them.
+            ensure
+              connections.each(&:close)
+            end
+          end
         end
       end
     end

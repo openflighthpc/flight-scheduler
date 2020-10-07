@@ -109,6 +109,8 @@ module FlightScheduler
       c.summary = 'Run EXECUTABLE under an already allocated job'
       c.slop.string '--jobid',
                     'Run under an already allocated job'
+      c.slop.bool '--pty',
+                    'Execute task zero in pseudo terminal mode.'
     end
 
     if Config::CACHE.development?

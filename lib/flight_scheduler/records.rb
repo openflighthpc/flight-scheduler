@@ -74,8 +74,9 @@ module FlightScheduler
 
   class JobStepsRecord < BaseRecord
     attributes :arguments,
+      :job_id,
       :path,
-      :job_id
+      :pty
 
     has_one :job, class_name: 'FlightScheduler::JobsRecord'
     has_many :executions, class_name: 'FlightScheduler::ExecutionsRecord'
