@@ -38,6 +38,27 @@ module FlightScheduler
         # output as the job changes state.  Perhaps, websockety goodness is
         # needed here.
         puts "Job #{job.id} queued and waiting for resources"
+        # XXX Replace this with a sane way of detecting if the resources have
+        # been allocated.
+        sleep 1
+        puts "Job #{job.id} allocated resources"
+        run_command_and_wait(job)
+        job.delete
+        puts "Job #{job.id} resources deallocated"
+      end
+
+      def run_command_and_wait(job)
+        command = args.first || 'bash'
+        child_pid = Kernel.fork do
+          opts = {
+            unsetenv_others: false,
+          }
+          env = {
+            'JOB_ID' => job.id,
+          }
+          Kernel.exec(env, command, *args[1..-1], **opts)
+        end
+        Process.wait(child_pid)
       end
     end
   end

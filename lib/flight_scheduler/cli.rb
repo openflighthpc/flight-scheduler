@@ -98,8 +98,8 @@ module FlightScheduler
       c.summary = 'List all current jobs'
     end
 
-    create_command 'alloc' do |c|
-      c.summary = 'Obtain a resource allocation'
+    create_command 'alloc', '[COMMAND] [ARGS...]' do |c|
+      c.summary = 'Obtain a resource allocation, execute the given command and release the allocation when the command is finished.'
       c.slop.string '-N', '--nodes',
                     'The minimum number of required nodes',
                     default: 1
@@ -109,6 +109,8 @@ module FlightScheduler
       c.summary = 'Run EXECUTABLE under an already allocated job'
       c.slop.string '--jobid',
                     'Run under an already allocated job'
+      c.slop.bool '--pty',
+                    'Execute task zero in pseudo terminal mode.'
     end
 
     if Config::CACHE.development?
