@@ -68,8 +68,6 @@ module FlightScheduler
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
     has_many :'allocated-nodes', class_name: 'FlightScheduler::NodesRecord'
-
-    has_many :'running-tasks', class_name: 'FlightScheduler::TasksRecord'
   end
 
   class JobStepsRecord < BaseRecord
@@ -86,12 +84,5 @@ module FlightScheduler
     attributes :node,
       :port,
       :state
-  end
-
-  class TasksRecord < BaseRecord
-    attributes :state, :min_nodes, :index
-
-    has_one :job, class_name: 'FlightScheduler::JobsRecord'
-    has_many :'allocated-nodes', class_name: 'FlightScheduler::NodesRecord'
   end
 end

@@ -30,21 +30,9 @@ module FlightScheduler
     class Queue < Command
       extend OutputMode::TLDR::Index
 
-      INCLUDES = ['partition', 'allocated-nodes', 'running-tasks', 'running-tasks.allocated-nodes']
+      INCLUDES = ['partition', 'allocated-nodes']
 
-      register_column(header: 'JOBID') do |r|
-        if r.is_a?(JobsRecord)
-          if r.attributes[:'next-index'].nil?
-            r.id
-          elsif r.attributes[:'next-index'] == r.attributes[:'last-index']
-            "#{r.id}[#{r.attributes[:'next-index']}]"
-          else
-            "#{r.id}[#{r.attributes[:'next-index']}-#{r.attributes[:'last-index']}]"
-          end
-        else
-          "#{r.job.id}[#{r.index}]"
-        end
-      end
+      register_column(header: 'JOBID') { |r| r.id }
       register_column(header: 'PARTITION') do |r|
         r.job.partition.name
       end
@@ -54,34 +42,21 @@ module FlightScheduler
       register_column(header: 'USER') { |_| 'TBD' }
       register_column(header: 'ST') { |j| j.state }
       register_column(header: 'TIME') { |_| 'TBD' }
-      register_column(header: 'NODES') do |j|
-        j.attributes[:'min-nodes'] unless j.attributes[:'last-index']
-      end
+      register_column(header: 'NODES') { |j| j.attributes[:'min-nodes'] }
       register_column(header: 'NODELIST(REASON)') do |record|
         nodes = record.relationships[:'allocated-nodes'].map(&:name).join(',')
-        if record.is_a?(TasksRecord)
-          nodes
+        if record.reason && nodes.empty?
+          "(#{record.reason})"
+        elsif record.reason
+          "#{nodes} (#{record.reason})"
         else
-          if record.reason && nodes.empty?
-            "(#{record.reason})"
-          elsif record.reason
-            "#{nodes} (#{record.reason})"
-          else
-            nodes
-          end
+          nodes
         end
       end
 
       def run
         records = JobsRecord.fetch_all(includes: INCLUDES, connection: connection)
-        jobs_and_tasks = records.map do |record|
-          if record.attributes[:'last-index']
-            [record, record.relationships[:'running-tasks'].each { |t| t.job = record }]
-          else
-            record
-          end
-        end.flatten.reject(&:nil?)
-        puts self.class.build_output.render(*jobs_and_tasks)
+        puts self.class.build_output.render(*records)
       end
     end
   end
