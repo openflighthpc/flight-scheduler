@@ -25,61 +25,11 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 require 'io/console'
+require_relative '../stepd_connection'
 
 module FlightScheduler
   module Commands
     class Run < Command
-      class StepdConnection
-        attr_reader :write_pipe
-
-        def initialize(execution)
-          @execution = execution
-          @read_pipe, @write_pipe = IO.pipe
-        end
-
-        def close
-          @write_pipe.close_write
-        end
-
-        def join
-          @thread.join
-        end
-
-        def connect_to_command
-          Thread.report_on_exception = true
-          @thread = Thread.new do
-            connection = TCPSocket.new(@execution.node, @execution.port)
-
-            input_thread = Thread.new do
-              begin
-                IO.copy_stream(@read_pipe, connection)
-              rescue IOError, Errno::EBADF, Errno::EPIPE, Errno::EIO
-                # These exceptions are not unexpected.  We just want to
-                # silence them.
-              ensure
-                connection.close_write
-              end
-            end
-            output_thread = Thread.new do
-              begin
-                IO.copy_stream(connection, STDOUT)
-              rescue IOError, Errno::EBADF, Errno::EPIPE, Errno::EIO
-              ensure
-                # If the connection is closed by the server, we'll end up here.
-                # However, input_thread will remain blocked at the
-                # `IO.copy_stream` call.  To exit cleanly we need to kill the
-                # thread.
-                input_thread.kill
-              end
-            end
-            input_thread.join
-            output_thread.join
-          ensure
-            connection.close if connection
-          end
-        end
-      end
-
       def run
         job_step = JobStepsRecord.create(
           arguments: args[1..-1],
@@ -89,16 +39,14 @@ module FlightScheduler
           connection: connection,
         )
         puts "Job step #{job_step.id} added"
+        # Wait for the executions to have started running on all nodes.
+        # XXX Replace this with a sane method.
         sleep 1
-
         job_step = JobStepsRecord.fetch(
           includes: ['executions'],
           connection: connection,
           url_opts: { id: "#{job_id}.#{job_step.id}" },
         )
-
-        input_thread = nil
-
         puts "Job step running"
         if pty? && job_step.executions.length > 1
           # If we're running a PTY session, we expect to have only a single
@@ -107,14 +55,10 @@ module FlightScheduler
           # we don't currently support this.
           raise "PTY session on multiple nodes is not supported."
         end
-        connections = job_step.executions.map do |execution|
-          StepdConnection.new(execution).tap do |conn|
-            conn.connect_to_command
-          end
-        end
+        connections = create_job_step_connections(job_step)
         input_thread = create_input_thread(connections)
         connections.each(&:join)
-        input_thread.kill if input_thread && input_thread.alive?
+        input_thread.kill if input_thread.alive?
       ensure
         connections.each(&:close) if connections
       end
@@ -135,6 +79,14 @@ module FlightScheduler
 
       def pty?
         !!opts.pty
+      end
+
+      def create_job_step_connections(job_step)
+        job_step.executions.map do |execution|
+          StepdConnection.new(execution).tap do |conn|
+            conn.connect_to_command
+          end
+        end
       end
 
       def create_input_thread(connections)
