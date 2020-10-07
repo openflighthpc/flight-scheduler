@@ -131,14 +131,6 @@ module FlightScheduler
 
         connections.each(&:join)
         input_thread.kill if input_thread && input_thread.alive?
-      rescue Interrupt
-        if Kernel.const_defined?(:Paint)
-          $stderr.puts "\n#{Paint['WARNING', :underline, :yellow]}: Cancelled by user"
-        else
-          $stderr.puts "\nWARNING: Cancelled by user"
-        end
-        exit(130)
-
       ensure
         connections.each(&:close) if connections
       end
