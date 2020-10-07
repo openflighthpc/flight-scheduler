@@ -48,11 +48,13 @@ module FlightScheduler
     end
 
     def connect_to_command
-      Thread.report_on_exception = true
+      report_on_exception = Config::CACHE.log_level == 'debug'
       @thread = Thread.new do
+        Thread.current.report_on_exception = report_on_exception
         connection = TCPSocket.new(@execution.node, @execution.port)
 
         input_thread = Thread.new do
+          Thread.current.report_on_exception = report_on_exception
           begin
             IO.copy_stream(@read_pipe, connection)
           rescue IOError, Errno::EBADF, Errno::EPIPE, Errno::EIO
@@ -63,6 +65,7 @@ module FlightScheduler
           end
         end
         output_thread = Thread.new do
+          Thread.current.report_on_exception = report_on_exception
           begin
             IO.copy_stream(connection, STDOUT)
           rescue IOError, Errno::EBADF, Errno::EPIPE, Errno::EIO

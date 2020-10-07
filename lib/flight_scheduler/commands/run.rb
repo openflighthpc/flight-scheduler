@@ -90,16 +90,19 @@ module FlightScheduler
       end
 
       def create_input_thread(connections)
+        report_on_exception = Config::CACHE.log_level == 'debug'
         if pty?
           # Currently we only support PTY sessions on a single node.
           write_pipe = connections.first.write_pipe
           Thread.new do
+            Thread.current.report_on_exception = report_on_exception
             STDIN.raw do |stdin|
               IO.copy_stream(stdin, write_pipe)
             end
           end
         else
           Thread.new do
+            Thread.current.report_on_exception = report_on_exception
             begin
               loop do
                 if STDIN.eof? || STDIN.closed?
