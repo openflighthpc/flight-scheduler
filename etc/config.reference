@@ -84,3 +84,9 @@ config :log_path, default: "#{xdg.cache_home}/flight/log/share/scheduler.log",
 # Valid levels: 'disabled', 'fatal', 'error', 'warn', 'info', 'debug'
 # ==============================================================================
 config :log_level, default: 'error'
+
+# ==============================================================================
+# Env var prefix
+# The prefix used for environment variables set in a job's context.
+# ==============================================================================
+config :env_var_prefix, default: ''

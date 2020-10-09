@@ -38,7 +38,7 @@ module FlightScheduler
           pty: pty?,
           connection: connection,
         )
-        puts "Job step #{job_step.id} added"
+        $stderr.puts "Job step #{job_step.id} added"
         # Wait for the executions to have started running on all nodes.
         # XXX Replace this with a sane method.
         sleep 1
@@ -47,7 +47,7 @@ module FlightScheduler
           connection: connection,
           url_opts: { id: "#{job_id}.#{job_step.id}" },
         )
-        puts "Job step running"
+        $stderr.puts "Job step running"
         if pty? && job_step.executions.length > 1
           # If we're running a PTY session, we expect to have only a single
           # execution running.  Whilst it might be possible to send STDIN to
@@ -66,10 +66,11 @@ module FlightScheduler
       private
 
       def job_id
+        job_id_env_var = "#{Config::CACHE.env_var_prefix}JOB_ID"
         if opts.jobid
           opts.jobid
-        elsif ENV['JOB_ID']
-          ENV['JOB_ID']
+        elsif ENV[job_id_env_var]
+          ENV[job_id_env_var]
         else
           raise InputError, <<~ERROR.chomp
             --jobid must be given

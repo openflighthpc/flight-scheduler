@@ -37,8 +37,8 @@ module FlightScheduler
                                 script: script_body,
                                 array: merged_opts.array,
                                 min_nodes: min_nodes,
-                                stdout_path: opts.output,
-                                stderr_path: opts.error,
+                                stdout_path: merged_opts.output,
+                                stderr_path: merged_opts.error,
                                 connection: connection)
         # TODO: Remove the id array stripping, this is a bug in the API
         #       specification
