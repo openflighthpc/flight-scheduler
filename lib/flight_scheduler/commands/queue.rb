@@ -39,7 +39,7 @@ module FlightScheduler
       register_column(header: 'NAME') do |r|
         r.job.attributes[:'script-name']
       end
-      register_column(header: 'USER') { |_| 'TBD' }
+      register_column(header: 'USER') { |j| j.username }
       register_column(header: 'ST') { |j| j.state }
       register_column(header: 'TIME') { |_| 'TBD' }
       register_column(header: 'NODES') { |j| j.attributes[:'min-nodes'] }
