@@ -40,7 +40,9 @@ module FlightScheduler
                                 stdout_path: opts.output,
                                 stderr_path: opts.error,
                                 connection: connection)
-        puts "Submitted batch job #{job.id}"
+        # TODO: Remove the id array stripping, this is a bug in the API
+        #       specification
+        puts "Submitted batch job #{job.id.sub(/\[.*\Z/, '')}"
       end
 
       def ensure_shebang
