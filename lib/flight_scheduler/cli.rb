@@ -29,6 +29,7 @@ require 'commander'
 
 require_relative 'config'
 require_relative 'version'
+require_relative 'auth'
 
 module FlightScheduler
   class CLI

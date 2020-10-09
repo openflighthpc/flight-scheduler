@@ -90,3 +90,9 @@ config :log_level, default: 'error'
 # The prefix used for environment variables set in a job's context.
 # ==============================================================================
 config :env_var_prefix, default: ''
+
+# ==============================================================================
+# The authentication type
+# Valid values: 'munge', 'basic'
+# ==============================================================================
+config :auth_type, default: 'munge'
