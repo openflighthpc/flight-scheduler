@@ -26,6 +26,7 @@
 #===============================================================================
 require 'active_support/core_ext/string/inflections'
 require 'timeout'
+require 'open3'
 
 module FlightScheduler
   module Auth
@@ -49,7 +50,7 @@ module FlightScheduler
 
     module Munge
       def self.call
-        token = Timeout.timeout(2) { system('munge -n') }
+        token = Timeout.timeout(2) { Open3.capture2('munge -n') }
         if token.nil?
           raise Error.define_class(22), "Unable to obtain munge token"
         end
