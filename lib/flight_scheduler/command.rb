@@ -71,7 +71,7 @@ module FlightScheduler
         Config::CACHE.logger.fatal 'Exited non-zero'
       end
       Config::CACHE.logger.debug e.backtrace.reverse.join("\n")
-      Config::CACHE.logger.error "(#{e.class}) #{e.message}"
+      Config::CACHE.logger.error "(#{e.class}) #{e.full_message}"
 
       if e.is_a?(Faraday::ConnectionFailed)
         raise GeneralError, 'Failed to establish a connection to the scheduler!'

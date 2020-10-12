@@ -39,7 +39,7 @@ module FlightScheduler
           script_name: File.basename(script_path),
           script: script_body,
           array: merged_opts.array,
-          min_nodes: min_nodes,
+          min_nodes: merged_opts.nodes,
           stdout_path: merged_opts.output,
           stderr_path: merged_opts.error,
           environment: environment,
@@ -92,18 +92,6 @@ module FlightScheduler
             This does not look like a batch script!
             The first line must start with #! followed by the interpreter path.
             For instance: #{Paint["#!/bin/bash", :yellow]}
-          ERROR
-        end
-      end
-
-      def min_nodes
-        return 1 unless merged_opts.nodes
-        if NUM_REGEX.match? merged_opts.nodes
-          merged_opts.nodes
-        else
-          raise InputError, <<~ERROR.chomp
-            Unrecognized number syntax: #{merged_opts.nodes}
-            It should be a number with an optional k or m suffix.
           ERROR
         end
       end

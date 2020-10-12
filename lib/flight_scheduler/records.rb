@@ -44,8 +44,8 @@ module FlightScheduler
     # Override the delete method to nicely handle missing records
     def delete
       super
-    rescue SimpleJSONAPIClient::Errors::NotFoundError => e
-      if e.response['content-type'] == 'application/vnd.api+json'
+    rescue SimpleJSONAPIClient::Errors::NotFoundError
+      if $!.response['content-type'] == 'application/vnd.api+json'
         # Handle proper API errors
         raise MissingError, <<~ERROR.chomp
           Could not locate #{self.class::SINGULAR_TYPE}: "#{self.id}"
@@ -68,6 +68,28 @@ module FlightScheduler
   end
 
   class JobsRecord < BaseRecord
+    CREATE_ERROR_MAP = {
+      "/data/attributes/array"      => '--array ARRAY     - does not give a valid range expression',
+      "/data/attributes/min-nodes"  => '--nodes MIN_NODES - must be a number with an optional k or m suffix'
+    }
+
+    def self.create(**_)
+      super
+    rescue SimpleJSONAPIClient::Errors::UnprocessableEntityError
+      Config::CACHE.logger.debug "(#{$!.class}) #{$!.full_message}"
+
+      base_msg = "Failed to create the job as the following error#{'s' unless $!.errors.length == 1} has occured:"
+      errors = $!.errors.map do |e|
+        pointer = e['source']['pointer']
+        self::CREATE_ERROR_MAP[pointer] || "An unknown error has occurred: #{pointer}"
+      end
+      full_message = <<~ERROR.chomp
+        #{base_msg}
+        #{errors.map { |e| " * #{e}" }.join("\n")}
+      ERROR
+      raise ClientError, full_message
+    end
+
     attributes :arguments,
       :array,
       :environment,
