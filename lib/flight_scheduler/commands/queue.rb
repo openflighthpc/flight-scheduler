@@ -34,10 +34,10 @@ module FlightScheduler
 
       register_column(header: 'JOBID') { |r| r.id }
       register_column(header: 'PARTITION') do |r|
-        r.job.partition.name
+        r.partition.name
       end
       register_column(header: 'NAME') do |r|
-        r.job.attributes[:'script-name']
+        r.attributes[:'script-name']
       end
       register_column(header: 'USER') { |j| j.username }
       register_column(header: 'ST') { |j| j.state }
