@@ -78,7 +78,7 @@ module FlightScheduler
     rescue SimpleJSONAPIClient::Errors::UnprocessableEntityError
       Config::CACHE.logger.debug "(#{$!.class}) #{$!.full_message}"
 
-      base_msg = "Failed to create the job as the following error#{'s' unless $!.errors.length == 1} has occured:"
+      base_msg = "Failed to create the job as the following #{ $!.errors.length == 1 ? 'error has' : 'errors have' } occured:"
       errors = $!.errors.map do |e|
         pointer = e['source']['pointer']
         self::CREATE_ERROR_MAP[pointer] || "An unknown error has occurred: #{pointer}"
