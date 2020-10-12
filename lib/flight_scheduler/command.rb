@@ -87,6 +87,11 @@ module FlightScheduler
           An error has occurred during your request:
           #{e.message}
         ERROR
+      elsif e.is_a?(SimpleJSONAPIClient::Errors::APIError)
+        raise ServerError, <<~ERROR.chomp
+          An unexpected error has occurred during your request!
+          Please contact your system administrator for further assistance.
+        ERROR
       else
         raise e
       end

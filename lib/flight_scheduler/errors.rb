@@ -51,6 +51,7 @@ module FlightScheduler
   InputError = GeneralError.define_class(3)
 
   ClientError = GeneralError.define_class(4)
+  ServerError = GeneralError.define_class(5)
 
   class InteractiveOnly < InputError
     MSG = 'This command requires an interactive terminal'
