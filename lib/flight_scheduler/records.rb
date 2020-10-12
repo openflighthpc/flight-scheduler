@@ -37,6 +37,23 @@ module FlightScheduler
       )
       base.const_set('COLLECTION_URL', "/#{Config::CACHE.api_prefix}/#{base::TYPE}")
       base.const_set('INDIVIDUAL_URL', "#{base::COLLECTION_URL}/%{id}")
+      base.const_set('SINGULAR_TYPE', base::TYPE.singularize)
+    end
+
+    ##
+    # Override the delete method to nicely handle missing records
+    def delete
+      super
+    rescue SimpleJSONAPIClient::Errors::NotFoundError => e
+      if e.response['content-type'] == 'application/vnd.api+json'
+        # Handle proper API errors
+        raise MissingError, <<~ERROR.chomp
+          Could not locate #{self.class::SINGULAR_TYPE}: "#{self.id}"
+        ERROR
+      else
+        # Fallback to the top level error handler
+        raise e
+      end
     end
   end
 
