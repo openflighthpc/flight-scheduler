@@ -50,7 +50,7 @@ module FlightScheduler
 
     module Munge
       def self.call
-        token = Timeout.timeout(2) { Open3.capture2('munge -n') }
+        token, _status = Timeout.timeout(2) { Open3.capture2('munge -n') }
         if token.nil?
           raise Error.define_class(22), "Unable to obtain munge token"
         end
