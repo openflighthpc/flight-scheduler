@@ -73,9 +73,13 @@ module FlightScheduler
       Config::CACHE.logger.debug e.backtrace.reverse.join("\n")
       Config::CACHE.logger.error "(#{e.class}) #{e.message}"
 
-      case e
-      when Faraday::ConnectionFailed
+      if e.is_a?(Faraday::ConnectionFailed)
         raise GeneralError, 'Failed to establish a connection to the scheduler!'
+      elsif e.is_a?(SimpleJSONAPIClient::Errors::NotFoundError) && e.response['content-type'] != 'application/vnd.api+json'
+        raise GeneralError, <<~ERROR.chomp
+          Received an unrecognised response from the scheduler!
+          Please check the following configuration and try again: #{Paint["'base_url' and 'api_prefix'", :yellow]}
+        ERROR
       else
         raise e
       end
