@@ -80,6 +80,13 @@ module FlightScheduler
           Received an unrecognised response from the scheduler!
           Please check the following configuration and try again: #{Paint["'base_url' and 'api_prefix'", :yellow]}
         ERROR
+      elsif e.is_a?(SimpleJSONAPIClient::Errors::APIError) && e.response['content-type'] == 'application/vnd.api+json' && e.status < 500
+        # Generic error handling of API requests. In general these errors should
+        # be caught before here. However this is a useful fallback
+        raise ClientError, <<~ERROR.chomp
+          An error has occurred during your request:
+          #{e.message}
+        ERROR
       else
         raise e
       end
