@@ -72,7 +72,13 @@ module FlightScheduler
       end
       Config::CACHE.logger.debug e.backtrace.reverse.join("\n")
       Config::CACHE.logger.error "(#{e.class}) #{e.message}"
-      raise e
+
+      case e
+      when Faraday::ConnectionFailed
+        raise GeneralError, 'Failed to establish a connection to the scheduler!'
+      else
+        raise e
+      end
     end
 
     def run
