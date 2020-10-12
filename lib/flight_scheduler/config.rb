@@ -125,4 +125,3 @@ module FlightScheduler
     end
   end
 end
-
