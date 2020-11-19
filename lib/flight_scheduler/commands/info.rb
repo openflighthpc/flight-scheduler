@@ -31,6 +31,16 @@ module FlightScheduler
       class Lister
         include OutputMode::TLDR::Index
 
+        # Returns true if the output will contain state information, else false
+        def state?
+          @state ? true : false
+        end
+
+        # Returns true if the output will contain each hostname individually, else false
+        def hostnames?
+          @hostnames ? true : false
+        end
+
         def register_default_columns
           register_partition
           register_column(header: 'AVAIL') { |_| 'TBD' }
@@ -41,19 +51,29 @@ module FlightScheduler
         end
 
         def register_partition
-          register_column(header: 'PARTITION') { |o| o.name }
+          register_column(header: 'PARTITION') { |p| p.name }
         end
 
         def register_nodes
-          register_column(header: 'NODES') { |o| o.nodes.length }
+          register_column(header: 'NODES') { |p| p.nodes.length }
         end
 
         def register_state
-          register_column(header: 'STATE') { |o| o.state }
+          @state = true
+          register_column(header: 'STATE') { |p| p.state }
         end
 
         def register_nodelist
-          register_column(header: 'NODELIST') { |o| o.nodes.map(&:name).join(',') }
+          register_column(header: 'NODELIST') { |p| p.nodes.map(&:name).join(',') }
+        end
+
+        # NOTE: This method is used to quasi-list the nodes instead of partitions
+        #
+        # It assumes a one-to-one mapping of partitions to nodes. This is achieved using
+        # the PartitionProxy and does not represent the underlining data model
+        def register_hostnames
+          @hostnames = true
+          register_column(header: 'HOSTNAMES') { |p| p.nodes.first.name }
         end
       end
 
@@ -69,22 +89,47 @@ module FlightScheduler
         end
       end
 
+      def lister
+        @lister ||= if opts.output
+                      raise NotImplementedError
+                    else
+                      Lister.new.tap(&:register_default_columns)
+                    end
+      end
+
       def run
         records = PartitionsRecord.fetch_all(includes: ['nodes'], connection: connection)
-        record_proxies = records.map do |record|
-          # Collect the nodes by their state
-          hash = Hash.new { |h, v| h[v] = [] }
-          record.nodes.each { |node| hash[node.state] << node }
 
-          # Create a proxy object for each partition-state combination
-          if hash.empty?
-            PartitionProxy.new(record)
-          else
-            hash.map do |state, nodes|
-              PartitionProxy.new(record, state: state, nodes: nodes)
-            end
+        record_proxies = if lister.hostnames?
+          # Create a one-to-one mapping between partitions and nodes
+          records.map(&:nodes).flatten.uniq do |node|
+            [node.id, partition.id]
+          end.map do |node|
+            PartitionProxy.new(node.partition, state: node.state, nodes: [node])
           end
-        end.flatten
+
+        elsif lister.state?
+          # Group the nodes into partitions by state
+          records.map do |record|
+            # Collect the nodes by their state
+            hash = Hash.new { |h, v| h[v] = [] }
+            record.nodes.each { |node| hash[node.state] << node }
+
+            # Create a proxy object for each partition-state combination
+            if hash.empty?
+              PartitionProxy.new(record)
+            else
+              hash.map do |state, nodes|
+                PartitionProxy.new(record, state: state, nodes: nodes)
+              end
+            end
+          end.flatten
+
+        else
+          # List the raw partitions
+          records.map { |p| PartitionProxy.new(p) }
+        end
+
         puts Lister.new.tap(&:register_default_columns).build_output.render(*record_proxies)
       end
     end
