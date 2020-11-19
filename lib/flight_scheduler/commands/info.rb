@@ -75,6 +75,24 @@ module FlightScheduler
           @hostnames = true
           register_column(header: 'HOSTNAMES') { |p| p.nodes.first.name }
         end
+
+        def register_cpus
+          register_column(header: 'CPUS') do |p|
+            p.nodes.reduce(0) { |sum, n| sum += n.cpus.to_i }
+          end
+        end
+
+        def register_gpus
+          register_column(header: 'GPUS') do |p|
+            p.nodes.reduce(0) { |sum, n| sum += n.gpus.to_i }
+          end
+        end
+
+        def register_memory
+          register_column(header: 'MEMORY') do |p|
+            p.nodes.reduce(0) { |sum, n| sum += n.memory.to_i }
+          end
+        end
       end
 
       # Used to wrap the partition after it has been filtered either by
@@ -90,11 +108,26 @@ module FlightScheduler
       end
 
       def lister
-        @lister ||= if opts.output
-                      raise NotImplementedError
-                    else
-                      Lister.new.tap(&:register_default_columns)
-                    end
+        @lister ||= if opts.format
+          Lister.new.tap do |list|
+            opts.format.split(',').each do |type|
+              case type
+              when 'NodeList'
+                list.register_nodelist
+              when 'NodeHost'
+                list.register_hostnames
+              when 'CPUs'
+                list.register_cpus
+              when 'GPUs'
+                list.register_gpus
+              when 'Memory'
+                list.register_memory
+              end
+            end
+          end
+        else
+          Lister.new.tap(&:register_default_columns)
+        end
       end
 
       def run
@@ -102,11 +135,9 @@ module FlightScheduler
 
         record_proxies = if lister.hostnames?
           # Create a one-to-one mapping between partitions and nodes
-          records.map(&:nodes).flatten.uniq do |node|
-            [node.id, partition.id]
-          end.map do |node|
-            PartitionProxy.new(node.partition, state: node.state, nodes: [node])
-          end
+          records.map do |partition|
+            partition.nodes.map { |n| PartitionProxy.new(partition, state: n.state, nodes: [n]) }
+          end.flatten.uniq { |p| [p.id, p.nodes.first.id] }
 
         elsif lister.state?
           # Group the nodes into partitions by state
@@ -130,7 +161,7 @@ module FlightScheduler
           records.map { |p| PartitionProxy.new(p) }
         end
 
-        puts Lister.new.tap(&:register_default_columns).build_output.render(*record_proxies)
+        puts lister.build_output.render(*record_proxies)
       end
     end
   end

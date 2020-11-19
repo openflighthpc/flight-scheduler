@@ -47,7 +47,9 @@ module FlightScheduler
   end
 
   class NodesRecord < BaseRecord
-    attributes :name, :state
+    attributes :name, :state, :cpus, :gpus, :memory
+
+    has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
   end
 
   class JobsRecord < BaseRecord
