@@ -28,25 +28,46 @@
 module FlightScheduler
   module Commands
     class Info < Command
-      extend OutputMode::TLDR::Index
+      class Lister
+        include OutputMode::TLDR::Index
 
-      # Wraps the partition object after it's nodes have been filtered by a state
-      class PartitionProxy < SimpleDelegator
-        attr_reader :state, :nodes
+        def register_default_columns
+          register_partition
+          register_column(header: 'AVAIL') { |_| 'TBD' }
+          register_column(header: 'TIMELIMIT') { |_| 'TBD' }
+          register_nodes
+          register_state
+          register_nodelist
+        end
 
-        def initialize(partition, state: 'IDLE', nodes: [])
-          @state = state
-          @nodes = nodes
-          super(partition)
+        def register_partition
+          register_column(header: 'PARTITION') { |o| o.name }
+        end
+
+        def register_nodes
+          register_column(header: 'NODES') { |o| o.nodes.length }
+        end
+
+        def register_state
+          register_column(header: 'STATE') { |o| o.state }
+        end
+
+        def register_nodelist
+          register_column(header: 'NODELIST') { |o| o.nodes.map(&:name).join(',') }
         end
       end
 
-      register_column(header: 'PARTITION') { |p| p.name }
-      register_column(header: 'AVAIL') { |_| 'TBD' }
-      register_column(header: 'TIMELIMIT') { |_| 'TBD' }
-      register_column(header: 'NODES') { |p| p.nodes.length }
-      register_column(header: 'STATE') { |p| p.state }
-      register_column(header: 'NODELIST') { |p| p.nodes.map(&:name).join(',') }
+      # Used to wrap the partition after it has been filtered either by
+      # individual nodes or state
+      class PartitionProxy < SimpleDelegator
+        attr_reader :state, :nodes
+
+        def initialize(partition, state: 'IDLE', nodes: nil)
+          super(partition)
+          @state = state
+          @nodes = nodes || partition.nodes
+        end
+      end
 
       def run
         records = PartitionsRecord.fetch_all(includes: ['nodes'], connection: connection)
@@ -64,7 +85,7 @@ module FlightScheduler
             end
           end
         end.flatten
-        puts self.class.build_output.render(*record_proxies)
+        puts Lister.new.tap(&:register_default_columns).build_output.render(*record_proxies)
       end
     end
   end
