@@ -67,7 +67,16 @@ module FlightScheduler
     end
 
     create_command 'info' do |c|
-      c.summary = 'List the available partitions'
+      c.summary = 'List the available partitions and nodes'
+      c.slop.string '-O', '--format', <<~DESC
+        Specify the format the information wil be displayed in. Must be comma separeted list of the following options:
+
+        * NodeList: All the nodes in the partition
+        * NodeHost: The name of each node individually
+        * CPUs: The number of cpus
+        * GPUs: The number of gpus
+        * Memory: The total amount of memory
+      DESC
     end
 
     MAGIC_BATCH_SLOP = Slop::Options.new.tap do |slop|
