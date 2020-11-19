@@ -122,6 +122,10 @@ module FlightScheduler
                 list.register_gpus
               when 'Memory'
                 list.register_memory
+              when 'State'
+                list.register_state
+              when 'Partition'
+                list.register_partition
               end
             end
           end

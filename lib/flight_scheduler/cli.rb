@@ -71,11 +71,13 @@ module FlightScheduler
       c.slop.string '-O', '--format', <<~DESC
         Specify the format the information wil be displayed in. Must be comma separeted list of the following options:
 
-        * NodeList: All the nodes in the partition
-        * NodeHost: The name of each node individually
         * CPUs: The number of cpus
         * GPUs: The number of gpus
         * Memory: The total amount of memory
+        * NodeList: All the nodes in the partition
+        * NodeHost: The name of each node individually
+        * Partition: The name of the partition
+        * State: The state of the node(s)
       DESC
     end
 
