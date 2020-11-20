@@ -45,6 +45,13 @@ module FlightScheduler
           end
         end
 
+        # Exit early if the job is not RUNNING
+        unless job.state == 'RUNNING'
+          raise GeneralError, <<~ERROR.chomp
+            Can not continue with the allocation as the job is in the #{job.state} state
+          ERROR
+        end
+
         puts "Job #{job.id} allocated resources"
         run_command_and_wait(job)
         job.delete
