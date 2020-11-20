@@ -31,22 +31,30 @@ module FlightScheduler
   module Commands
     class Run < Command
       def run
+        create_con = connection.dup
+        create_con.params = { include: 'executions' }
         job_step = JobStepsRecord.create(
           arguments: args[1..-1],
           job_id: job_id,
           path: resolve_path(args.first),
           pty: pty?,
-          connection: connection,
+          connection: create_con
         )
         $stderr.puts "Job step #{job_step.id} added"
-        # Wait for the executions to have started running on all nodes.
-        # XXX Replace this with a sane method.
-        sleep 1
-        job_step = JobStepsRecord.fetch(
-          includes: ['executions'],
-          connection: connection,
-          url_opts: { id: "#{job_id}.#{job_step.id}" },
-        )
+
+        # Long poll until the job step has been submitted to all nodes
+        # NOTE: Sometimes the submission is sufficiently fast that this
+        #       wait is skipped completely
+        con = connection.dup
+        con.params = { long_poll_submitted: true }
+        until job_step.submitted
+          job_step = JobStepsRecord.fetch(
+            includes: ['executions'],
+            connection: con,
+            url_opts: { id: "#{job_id}.#{job_step.id}" },
+          )
+        end
+
         $stderr.puts "Job step running"
         if pty? && job_step.executions.length > 1
           # If we're running a PTY session, we expect to have only a single

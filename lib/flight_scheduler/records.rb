@@ -78,7 +78,8 @@ module FlightScheduler
     attributes :arguments,
       :job_id,
       :path,
-      :pty
+      :pty,
+      :submitted
 
     has_one :job, class_name: 'FlightScheduler::JobsRecord'
     has_many :executions, class_name: 'FlightScheduler::ExecutionsRecord'
