@@ -33,14 +33,18 @@ module FlightScheduler
           min_nodes: opts.nodes,
           connection: connection,
         )
-        # XXX It might not be queued.  It could have been immediately
-        # allocated resources.  We should handle that here and add additional
-        # output as the job changes state.  Perhaps, websockety goodness is
-        # needed here.
-        puts "Job #{job.id} queued and waiting for resources"
-        # XXX Replace this with a sane way of detecting if the resources have
-        # been allocated.
-        sleep 1
+
+        # Long Poll until the job becomes available
+        if job.runnable
+          puts "Job #{job.id} queued and waiting for resources"
+          long_poll_id = "#{job.id}/long-poll-runnable"
+          while job.runnable
+            job = JobsRecord.fetch(
+              connection: connection, url_opts: { id: long_poll_id }
+            )
+          end
+        end
+
         puts "Job #{job.id} allocated resources"
         run_command_and_wait(job)
         job.delete

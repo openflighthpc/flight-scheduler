@@ -67,7 +67,8 @@ module FlightScheduler
       :state,
       :stdout_path,
       :stderr_path,
-      :username
+      :username,
+      :runnable
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
     has_many :'allocated-nodes', class_name: 'FlightScheduler::NodesRecord'
