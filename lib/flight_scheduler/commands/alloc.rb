@@ -29,9 +29,10 @@ module FlightScheduler
   module Commands
     class Alloc < Command
       def run
+        create_con = connection.dup.tap { |c| c.params = { include: ['shared-environment'] } }
         job = JobsRecord.create(
           min_nodes: opts.nodes,
-          connection: connection,
+          connection: create_con
         )
 
         # Long Poll until the job becomes available
@@ -41,7 +42,7 @@ module FlightScheduler
           con.params = { long_poll_runnable: true }
           while job.runnable
             job = JobsRecord.fetch(
-              connection: con, url_opts: { id: job.id }
+              connection: con, url_opts: { id: job.id }, includes: ['shared-environment']
             )
           end
         end
@@ -55,6 +56,9 @@ module FlightScheduler
 
         puts "Job #{job.id} allocated resources"
         run_command_and_wait(job)
+
+        # Reset the connections to remove the query parameters
+        job.instance_variable_set(:@connection, connection)
         job.delete
         puts "Job #{job.id} resources deallocated"
       end
@@ -65,9 +69,7 @@ module FlightScheduler
           opts = {
             unsetenv_others: false,
           }
-          env = {
-            'JOB_ID' => job.id,
-          }
+          env = job.send('shared-environment').attributes[:hash]
           Kernel.exec(env, command, *args[1..-1], **opts)
         end
         Process.wait(child_pid)

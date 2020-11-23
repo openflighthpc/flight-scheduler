@@ -71,6 +71,7 @@ module FlightScheduler
       :runnable
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
+    has_one :'shared-environment', class_name: 'FlightScheduler::EnvironmentsRecord'
     has_many :'allocated-nodes', class_name: 'FlightScheduler::NodesRecord'
   end
 
@@ -89,5 +90,9 @@ module FlightScheduler
     attributes :node,
       :port,
       :state
+  end
+
+  class EnvironmentsRecord < BaseRecord
+    attributes :hash
   end
 end
