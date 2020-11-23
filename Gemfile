@@ -36,6 +36,7 @@ gem 'commander-openflighthpc'
 gem 'hashie'
 gem 'output_mode'
 gem 'simple_jsonapi_client'
+gem 'tty-screen'
 gem 'xdg'
 
 group :development do

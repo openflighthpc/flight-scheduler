@@ -74,6 +74,7 @@ module FlightScheduler
 
   class JobStepsRecord < BaseRecord
     attributes :arguments,
+      :envs,
       :job_id,
       :path,
       :pty,
