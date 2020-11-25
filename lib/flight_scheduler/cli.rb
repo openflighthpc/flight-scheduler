@@ -30,6 +30,7 @@ require 'commander'
 require_relative 'config'
 require_relative 'version'
 require_relative 'auth'
+require_relative 'commands'
 
 module FlightScheduler
   class CLI
@@ -41,7 +42,6 @@ module FlightScheduler
         c.hidden if name.split.length > 1
 
         c.action do |args, opts|
-          require_relative 'commands'
           Commands.build(name, *args, **opts.to_h).run!
         end
 
@@ -68,16 +68,27 @@ module FlightScheduler
 
     create_command 'info' do |c|
       c.summary = 'List the available partitions and nodes'
-      c.slop.string '-O', '--format', <<~DESC
+      c.slop.string '-O', '--Format', <<~DESC.chomp
         Specify the format the information wil be displayed in. Must be comma separeted list of the following options:
 
-        * CPUs: The number of cpus
-        * GPUs: The number of gpus
-        * Memory: The total amount of memory
-        * NodeList: All the nodes in the partition
-        * NodeHost: The name of each node individually
-        * Partition: The name of the partition
-        * State: The state of the node(s)
+        #{Commands::Info::Lister::OTHER_FIELDS.map { |k, v| "* #{k}: #{v}" }.join("\n")}
+
+        The following field is available when listing the partitions (default):
+        #{Commands::Info::Lister::PARTITION_FIELDS.map { |k, v| "* #{k}: #{v}" }.join("\n")}
+
+        The following field will list each node individually. Can not be used with the partition field.
+        #{Commands::Info::Lister::NODE_FIELDS.map { |k, v| "* #{k}: #{v}" }.join("\n")}
+      DESC
+      c.slop.string '-o', '--format', <<~DESC.chomp
+        Specify the format the information wil be displayed in:
+
+        #{Commands::Info::Lister::OTHER_TYPES.map { |k, v| "* %#{k}: #{v}" }.join("\n")}
+
+        The following field is available when listing the partitions (default):
+        #{Commands::Info::Lister::PARTITION_TYPES.map { |k, v| "* %#{k}: #{v}" }.join("\n")}
+
+        The following fields will list each node individually. Can not be used with the partition field.
+        #{Commands::Info::Lister::NODE_TYPES.map { |k, v| "* %#{k}: #{v}" }.join("\n")}
       DESC
     end
 

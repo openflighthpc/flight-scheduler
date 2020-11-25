@@ -31,30 +31,149 @@ module FlightScheduler
       class Lister
         include OutputMode::TLDR::Index
 
+        NODE_TYPES = {
+          'n' => 'Hostname of the node',
+          't' => 'State of the nodes'
+        }
+        # NOTE: Fix pluralisation in CLI once an additional type is added
+        PARTITION_TYPES = {
+          'R' => 'Partition name'
+        }
+        OTHER_TYPES = {
+          'a' => 'State of the partition or nodes',
+          'c' => 'Number of CPUs per node',
+          'D' => 'Number of nodes',
+          'm' => 'Memory per node (MB)'
+        }
+        TYPES = OTHER_TYPES.merge(NODE_TYPES).merge(PARTITION_TYPES)
+        FORMAT_REGEX = Regexp.new("\\A%(?<size>\\d*)(?<type>#{TYPES.keys.join('|')})\\Z")
+
+        # NOTE: Fix pluralisation in CLI once an additional field is added
+        NODE_FIELDS = {
+          'NodeHost' => 'The hostname of the node',
+        }
+        # NOTE: Fix pluralisation in CLI once an additional field is added
+        PARTITION_FIELDS = {
+          'Partition' => 'The name of the partition'
+        }
+        OTHER_FIELDS = {
+          'NodeList' => 'All the nodes in the partition',
+          'CPUs' => 'The number of cpus',
+          'GPUs' => 'The number of gpus',
+          'Memory' => 'The total amount of memory',
+          'State' => 'The state of the partition or nodes',
+        }
+
+        def parse_field_format(format)
+          fields = format.split(',')
+
+          # Determine if any mutually exclusive types have been used
+          nodes = fields.select { |f| NODE_FIELDS[f] }
+          partitions = fields.select { |f| PARTITION_FIELDS[f] }
+
+          unless nodes.empty? || partitions.empty?
+            types = [*nodes, *partitions]
+            raise InputError, <<~ERROR.chomp
+              Can not use the following formats together as it requires listing both nodes and partitions:
+              #{types.join(",")}
+            ERROR
+          end
+
+          @node_basis = true unless nodes.empty?
+
+          fields.each do |field|
+            case field
+            when 'NodeList'
+              register_nodelist
+            when 'NodeHost'
+              register_hostnames
+            when 'CPUs'
+              register_cpus
+            when 'GPUs'
+              register_gpus
+            when 'Memory'
+              register_memory
+            when 'State'
+              register_state
+            when 'Partition'
+              register_partition_name
+            else
+              # NOTE: Ensure all of the above FIELDS are implemented otherwise
+              # this warning will be inconsistent
+              msg = "Skipping unrecognised format field: #{field}"
+              Config::CACHE.logger.warn(msg)
+              $stderr.puts Paint[msg, :red]
+            end
+          end
+        end
+
+        def parse_type_format(format)
+          matches = format.split(/\s+/).map do |field|
+            FORMAT_REGEX.match(field) || begin
+              msg = "Skipping unrecognised format field: #{field}"
+              Config::CACHE.logger.warn(msg)
+              $stderr.puts Paint[msg, :red]
+            end
+          end.reject(&:nil?)
+
+          # Determine if any mutually exclusive types have been used
+          nodes = matches.select { |m| NODE_TYPES[m.named_captures['type']] }
+          partitions = matches.select { |m| PARTITION_TYPES[m.named_captures['type']] }
+
+          unless nodes.empty? || partitions.empty?
+            types = [*nodes, *partitions].map(&:to_s)
+            raise InputError, <<~ERROR.chomp
+              Can not use the following formats together as it requires listing both nodes and partitions:
+              #{types.join(" ")}
+            ERROR
+          end
+
+          @node_basis = true unless nodes.empty?
+
+          matches.each do |match|
+            case match.named_captures['type']
+            when 'a'
+              register_state
+            when 'c'
+              register_cpus
+            when 'D'
+              register_node_count
+            when 'm'
+              register_memory
+            when 'n'
+              register_hostnames
+            when 'R'
+              register_partition_name
+            end
+          end
+        end
+
         # Returns true if the output will contain state information, else false
         def state?
           @state ? true : false
         end
 
-        # Returns true if the output will contain each hostname individually, else false
-        def hostnames?
-          @hostnames ? true : false
+        # Returns true if the output should list each node individually
+        def node_basis?
+          @node_basis ? true : false
         end
 
         def register_default_columns
-          register_partition
+          register_partition_name
           register_column(header: 'AVAIL') { |_| 'TBD' }
           register_column(header: 'TIMELIMIT') { |_| 'TBD' }
-          register_nodes
+          register_node_count
           register_state
           register_nodelist
         end
 
-        def register_partition
+        private
+
+        def register_partition_name
           register_column(header: 'PARTITION') { |p| p.name }
         end
 
-        def register_nodes
+        def register_node_count
           register_column(header: 'NODES') { |p| p.nodes.length }
         end
 
@@ -72,7 +191,6 @@ module FlightScheduler
         # It assumes a one-to-one mapping of partitions to nodes. This is achieved using
         # the PartitionProxy and does not represent the underlining data model
         def register_hostnames
-          @hostnames = true
           register_column(header: 'HOSTNAMES') { |p| p.nodes.first.name }
         end
 
@@ -96,8 +214,6 @@ module FlightScheduler
             end
           end
         end
-
-        private
 
         def value_or_min_plus(*raws)
           # Ensures everything is an integer
@@ -129,36 +245,21 @@ module FlightScheduler
       end
 
       def lister
-        @lister ||= if opts.format
-          Lister.new.tap do |list|
-            opts.format.split(',').each do |type|
-              case type
-              when 'NodeList'
-                list.register_nodelist
-              when 'NodeHost'
-                list.register_hostnames
-              when 'CPUs'
-                list.register_cpus
-              when 'GPUs'
-                list.register_gpus
-              when 'Memory'
-                list.register_memory
-              when 'State'
-                list.register_state
-              when 'Partition'
-                list.register_partition
-              end
-            end
+        @lister ||= Lister.new.tap do |list|
+          if opts.Format
+            list.parse_field_format(opts.Format)
+          elsif opts.format
+            list.parse_type_format(opts.format)
+          else
+            list.register_default_columns
           end
-        else
-          Lister.new.tap(&:register_default_columns)
         end
       end
 
       def run
         records = PartitionsRecord.fetch_all(includes: ['nodes'], connection: connection)
 
-        record_proxies = if lister.hostnames?
+        record_proxies = if lister.node_basis?
           # Create a one-to-one mapping between partitions and nodes
           # NOTE: This section will duplicate nodes which are in multiple partitions
           #       This may or may not be desirable depending if the 'Partitions' column
