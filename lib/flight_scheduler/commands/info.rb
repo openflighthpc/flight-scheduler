@@ -45,8 +45,7 @@ module FlightScheduler
           'D' => 'Number of nodes',
           'm' => 'Memory per node (MB)'
         }
-        TYPES = OTHER_TYPES.merge(NODE_TYPES).merge(PARTITION_TYPES)
-        FORMAT_REGEX = Regexp.new("\\A%(?<size>\\d*)(?<type>#{TYPES.keys.join('|')})\\Z")
+        FORMAT_REGEX = /\A%(?<size>\d*)(?<type>\w)\Z/
 
         # NOTE: Fix pluralisation in CLI once an additional field is added
         NODE_FIELDS = {
@@ -100,9 +99,7 @@ module FlightScheduler
             else
               # NOTE: Ensure all of the above FIELDS are implemented otherwise
               # this warning will be inconsistent
-              msg = "Skipping unrecognised format field: #{field}"
-              Config::CACHE.logger.warn(msg)
-              $stderr.puts Paint[msg, :red]
+              warn_unrecognised_field(field)
             end
           end
         end
@@ -110,9 +107,8 @@ module FlightScheduler
         def parse_type_format(format)
           matches = format.split(/\s+/).map do |field|
             FORMAT_REGEX.match(field) || begin
-              msg = "Skipping unrecognised format field: #{field}"
-              Config::CACHE.logger.warn(msg)
-              $stderr.puts Paint[msg, :red]
+              warn_unrecognised_field(field)
+              nil
             end
           end.reject(&:nil?)
 
@@ -131,7 +127,8 @@ module FlightScheduler
           @node_basis = true unless nodes.empty?
 
           matches.each do |match|
-            case match.named_captures['type']
+            type = match.named_captures['type']
+            case type
             when 'a'
               register_state
             when 'c'
@@ -144,6 +141,10 @@ module FlightScheduler
               register_hostnames
             when 'R'
               register_partition_name
+            else
+              # NOTE: Ensure all of the above TYPES are implemented otherwise
+              # this warning will be inconsistent
+              warn_unrecognised_field(type)
             end
           end
         end
@@ -229,6 +230,12 @@ module FlightScheduler
 
           # Append a plus if the maximum value is larger
           min == max ? value.to_s : "#{value}+"
+        end
+
+        def warn_unrecognised_field(field)
+          msg = "Skipping unrecognised format field: #{field}"
+          Config::CACHE.logger.warn(msg)
+          $stderr.puts Paint[msg, :red]
         end
       end
 
