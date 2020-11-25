@@ -139,6 +139,11 @@ module FlightScheduler
 
         record_proxies = if lister.hostnames?
           # Create a one-to-one mapping between partitions and nodes
+          # NOTE: This section will duplicate nodes which are in multiple partitions
+          #       This may or may not be desirable depending if the 'Partitions' column
+          #       is being displayed.
+          #
+          #       Consider revisiting once the desired behaviour is determined
           records.map do |partition|
             partition.nodes.map { |n| PartitionProxy.new(partition, state: n.state, nodes: [n]) }
           end.flatten.uniq { |p| [p.id, p.nodes.first.id] }
