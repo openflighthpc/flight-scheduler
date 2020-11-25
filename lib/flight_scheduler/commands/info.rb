@@ -170,21 +170,62 @@ module FlightScheduler
 
         private
 
+        # ///////////////////////////////////////////////////////////
+        # Main helper methods for selecting column type:
+        # Each column can render: a partition, a node, or many nodes
+        # A table can not contain both a partition and a node column
+        # however the "nodes" can be shared
+        def register_partition_column(**opts, &b)
+          register_column(**opts) do |partition, _n, _s|
+            raise InternalError, <<~ERROR.chomp if partition.nil?
+              Attempted to render a partition within a node context
+            ERROR
+            b.call(partition)
+          end
+        end
+
+        def register_node_column(**opts, &b)
+          register_column(**opts) do |partition, nodes, _s|
+            raise InternalError, <<~ERROR.chomp unless partition.nil?
+              Attempted to render a node within a partition context
+            ERROR
+            raise InternalError, <<~ERROR.chomp unless node.length == 1
+              Attempted to render a node with '#{node.length}' nodes
+            ERROR
+            b.call(nodes.first)
+          end
+        end
+
+        def register_nodes_column(**opts, &b)
+          register_column(**opts) do |partition, nodes, _s|
+            nodes ||= (partition.nodes || [])
+            b.call(nodes)
+          end
+        end
+        # End main helpers
+        # The following register an actual column
+        # ///////////////////////////////////////////////////////////
+
         def register_partition_name
-          register_column(header: 'PARTITION') { |p| p.name }
+          register_partition_column(header: 'PARTITION') { |p| p.name }
         end
 
         def register_node_count
-          register_column(header: 'NODES') { |p| p.nodes.length }
+          register_nodes_column(header: 'NODES') { |n| n.length }
         end
 
         def register_state
           @state = true
-          register_column(header: 'STATE') { |p| p.state }
+          register_column(header: 'STATE') do |_p, _n, state|
+            raise InternalError, <<~ERROR.chomp if state.nil?
+              Attempted to renderer without a state
+            ERROR
+            state
+          end
         end
 
-        def register_nodelist
-          register_column(header: 'NODELIST') { |p| p.nodes.map(&:name).join(',') }
+        def register_nodes_nodelist
+          register_nodes_column(header: 'NODELIST') { |n| n.map(&:name).join(',') }
         end
 
         # NOTE: This method is used to quasi-list the nodes instead of partitions
@@ -192,24 +233,24 @@ module FlightScheduler
         # It assumes a one-to-one mapping of partitions to nodes. This is achieved using
         # the PartitionProxy and does not represent the underlining data model
         def register_hostnames
-          register_column(header: 'HOSTNAMES') { |p| p.nodes.first.name }
+          register_node_column(header: 'HOSTNAMES') { |n| n.name }
         end
 
         def register_cpus
-          register_column(header: 'CPUS') do |p|
-            value_or_min_plus(*p.nodes.map(&:cpus))
+          register_nodes_column(header: 'CPUS') do |nodes|
+            value_or_min_plus(*nodes.map(&:cpus))
           end
         end
 
         def register_gpus
-          register_column(header: 'GPUS') do |p|
-            value_or_min_plus(*p.nodes.map(&:gpus))
+          register_nodes_column(header: 'GPUS') do |p|
+            value_or_min_plus(*nodes.map(&:gpus))
           end
         end
 
         def register_memory
-          register_column(header: 'MEMORY (MB)') do |p|
-            value_or_min_plus(*p.nodes.map(&:gpus)) do |value|
+          register_nodes_column(header: 'MEMORY (MB)') do |p|
+            value_or_min_plus(*nodes.map(&:gpus)) do |value|
               # Convert the memory into MB
               sprintf('%.2f', value.fdiv(1048576))
             end
@@ -239,18 +280,6 @@ module FlightScheduler
         end
       end
 
-      # Used to wrap the partition after it has been filtered either by
-      # individual nodes or state
-      class PartitionProxy < SimpleDelegator
-        attr_reader :state, :nodes
-
-        def initialize(partition, state: 'IDLE', nodes: nil)
-          super(partition)
-          @state = state
-          @nodes = nodes || partition.nodes
-        end
-      end
-
       def lister
         @lister ||= Lister.new.tap do |list|
           if opts.Format
@@ -266,40 +295,39 @@ module FlightScheduler
       def run
         records = PartitionsRecord.fetch_all(includes: ['nodes'], connection: connection)
 
-        record_proxies = if lister.node_basis?
-          # Create a one-to-one mapping between partitions and nodes
-          # NOTE: This section will duplicate nodes which are in multiple partitions
-          #       This may or may not be desirable depending if the 'Partitions' column
-          #       is being displayed.
-          #
-          #       Consider revisiting once the desired behaviour is determined
-          records.map do |partition|
-            partition.nodes.map { |n| PartitionProxy.new(partition, state: n.state, nodes: [n]) }
-          end.flatten.uniq { |p| [p.id, p.nodes.first.id] }
+        entries = if lister.node_basis?
+          # List each node individually
+          # Can not be used with the partition columns
+          records.each_with_object([]) do |partition, memo|
+            partition.nodes.each do |node|
+              memo << [nil, [node], node.state]
+            end
+          end.uniq { |_p, n, _s| n.first.name }
 
         elsif lister.state?
           # Group the nodes into partitions by state
-          records.map do |record|
+          records.each_with_object([]) do |partition, memo|
             # Collect the nodes by their state
             hash = Hash.new { |h, v| h[v] = [] }
-            record.nodes.each { |node| hash[node.state] << node }
+            partition.nodes.each { |node| hash[node.state] << node }
 
             # Create a proxy object for each partition-state combination
             if hash.empty?
-              PartitionProxy.new(record)
+              # XXX: What should be the state of an empty partition?
+              memo << [partition, [], 'IDLE']
             else
               hash.map do |state, nodes|
-                PartitionProxy.new(record, state: state, nodes: nodes)
+                memo << [partition, nodes, state]
               end
             end
-          end.flatten
+          end
 
         else
           # List the raw partitions
-          records.map { |p| PartitionProxy.new(p) }
+          records.map { |p| [p, p.nodes, nil] }
         end
 
-        puts lister.build_output.render(*record_proxies)
+        puts lister.build_output.render(*entries)
       end
     end
   end
