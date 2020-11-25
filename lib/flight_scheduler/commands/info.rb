@@ -78,20 +78,41 @@ module FlightScheduler
 
         def register_cpus
           register_column(header: 'CPUS') do |p|
-            p.nodes.reduce(0) { |sum, n| sum += n.cpus.to_i }
+            value_or_min_plus(*p.nodes.map(&:cpus))
           end
         end
 
         def register_gpus
           register_column(header: 'GPUS') do |p|
-            p.nodes.reduce(0) { |sum, n| sum += n.gpus.to_i }
+            value_or_min_plus(*p.nodes.map(&:gpus))
           end
         end
 
         def register_memory
-          register_column(header: 'MEMORY') do |p|
-            p.nodes.reduce(0) { |sum, n| sum += n.memory.to_i }
+          register_column(header: 'MEMORY (MB)') do |p|
+            value_or_min_plus(*p.nodes.map(&:gpus)) do |value|
+              # Convert the memory into MB
+              sprintf('%.2f', value.fdiv(1048576))
+            end
           end
+        end
+
+        private
+
+        def value_or_min_plus(*raws)
+          # Ensures everything is an integer
+          # NOTE: Also assumes nil should be interpreted as 0
+          values = raws.map { |v| v.nil? ? 0 : v }
+
+          # Determine the minimum and maximum value
+          min = values.min
+          max = values.max
+
+          # Allows the caller to transform the value (used to handle floats)
+          value = block_given? ? yield(min) : min
+
+          # Append a plus if the maximum value is larger
+          min == max ? value.to_s : "#{value}+"
         end
       end
 
