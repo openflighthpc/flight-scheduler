@@ -47,7 +47,9 @@ module FlightScheduler
   end
 
   class NodesRecord < BaseRecord
-    attributes :name, :state
+    attributes :name, :state, :cpus, :gpus, :memory
+
+    has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
   end
 
   class JobsRecord < BaseRecord
@@ -67,7 +69,6 @@ module FlightScheduler
       :stderr_path,
       :username
 
-    has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
     has_many :'allocated-nodes', class_name: 'FlightScheduler::NodesRecord'
   end
 

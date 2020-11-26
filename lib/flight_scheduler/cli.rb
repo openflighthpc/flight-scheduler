@@ -30,6 +30,7 @@ require 'commander'
 require_relative 'config'
 require_relative 'version'
 require_relative 'auth'
+require_relative 'commands'
 
 module FlightScheduler
   class CLI
@@ -41,7 +42,6 @@ module FlightScheduler
         c.hidden if name.split.length > 1
 
         c.action do |args, opts|
-          require_relative 'commands'
           Commands.build(name, *args, **opts.to_h).run!
         end
 
@@ -67,7 +67,29 @@ module FlightScheduler
     end
 
     create_command 'info' do |c|
-      c.summary = 'List the available partitions'
+      c.summary = 'List the available partitions and nodes'
+      c.slop.string '-O', '--Format', <<~DESC.chomp
+        Specify the format the information wil be displayed in. Must be comma separeted list of the following options:
+
+        #{Commands::Info::Lister::OTHER_FIELDS.map { |k, v| "* #{k}: #{v}" }.join("\n")}
+
+        The following field will list each partition individually:
+        #{Commands::Info::Lister::PARTITION_FIELDS.map { |k, v| "* #{k}: #{v}" }.join("\n")}
+
+        The following field will list each node individually:
+        #{Commands::Info::Lister::NODE_FIELDS.map { |k, v| "* #{k}: #{v}" }.join("\n")}
+      DESC
+      c.slop.string '-o', '--format', <<~DESC.chomp
+        Specify the format the information wil be displayed in:
+
+        #{Commands::Info::Lister::OTHER_TYPES.map { |k, v| "* %#{k}: #{v}" }.join("\n")}
+
+        The following field will list each partition individually:
+        #{Commands::Info::Lister::PARTITION_TYPES.map { |k, v| "* %#{k}: #{v}" }.join("\n")}
+
+        The following field will list each node individually:
+        #{Commands::Info::Lister::NODE_TYPES.map { |k, v| "* %#{k}: #{v}" }.join("\n")}
+      DESC
     end
 
     MAGIC_BATCH_SLOP = Slop::Options.new.tap do |slop|
