@@ -226,23 +226,23 @@ module FlightScheduler
 
         def register_gpus
           register_nodes_column(header: 'GPUS') do |nodes|
-            value_or_min_plus(*nodes.map(&:gpus))
+            value_or_min_plus(*nodes.map(&:gpus), default: 0)
           end
         end
 
         def register_memory
           register_nodes_column(header: 'MEMORY (MB)') do |nodes|
-            value_or_min_plus(*nodes.map(&:gpus)) do |value|
+            value_or_min_plus(*nodes.map(&:memory), default: 1048576) do |value|
               # Convert the memory into MB
-              sprintf('%.2f', value.fdiv(1048576))
+              sprintf('%d', value.fdiv(1048576))
             end
           end
         end
 
-        def value_or_min_plus(*raws)
+        def value_or_min_plus(*raws, default: 1)
           # Ensures everything is an integer
-          # NOTE: Also assumes nil should be interpreted as 0
-          values = raws.map { |v| v.nil? ? 0 : v }
+          # Ignores nil values
+          values = raws.map { |v| v.nil? ? default : v }
 
           # Determine the minimum and maximum value
           min = values.min
