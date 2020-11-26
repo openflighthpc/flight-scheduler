@@ -65,6 +65,7 @@ module FlightScheduler
       :state,
       :stdout_path,
       :stderr_path,
+      :envs,
       :username
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'

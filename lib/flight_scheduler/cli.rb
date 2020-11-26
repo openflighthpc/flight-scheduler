@@ -111,6 +111,7 @@ module FlightScheduler
       c.slop.string '-C', '--comment-prefix',
                     'Parse comment lines starting with COMMENT_PREFIX as additional options',
                     default: Config::CACHE.comment_prefix
+      c.slop.string '--export', 'Enviroment variables to export'
     end
 
     create_command 'cancel', 'JOBID' do |c|

@@ -25,6 +25,8 @@
 # https://github.com/openflighthpc/flight-scheduler
 #===============================================================================
 
+require 'csv'
+
 module FlightScheduler
   module Commands
     class Batch < Command
@@ -39,10 +41,32 @@ module FlightScheduler
                                 min_nodes: min_nodes,
                                 stdout_path: merged_opts.output,
                                 stderr_path: merged_opts.error,
+                                envs: environment,
                                 connection: connection)
         # TODO: Remove the id array stripping, this is a bug in the API
         #       specification
         puts "Submitted batch job #{job.id.sub(/\[.*\Z/, '')}"
+      end
+
+      def environment
+        Bundler.with_unbundled_env do
+          # Default to displaying everthing
+          return ENV.to_h unless opts.export
+
+          # Parse the string and remove the ALL and NONE component
+          parts   = CSV.parse(opts.export).first || []
+          all     = (parts.delete('ALL') ? true : false)
+          parts.delete('NONE')
+
+          # Convert the components into a hash
+          others  = parts.each_with_object({}) do |part, memo|
+            key, value = part.split('=', 2)
+            memo[key] = value || ENV[key]
+          end
+
+          # Allow all the existing env vars to be exported
+          all ? others.merge(ENV.to_h) : others
+        end
       end
 
       def ensure_shebang
