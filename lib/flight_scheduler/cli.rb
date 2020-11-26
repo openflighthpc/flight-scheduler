@@ -73,10 +73,10 @@ module FlightScheduler
 
         #{Commands::Info::Lister::OTHER_FIELDS.map { |k, v| "* #{k}: #{v}" }.join("\n")}
 
-        The following field is available when listing the partitions (default):
+        The following field will list each partition individually:
         #{Commands::Info::Lister::PARTITION_FIELDS.map { |k, v| "* #{k}: #{v}" }.join("\n")}
 
-        The following field will list each node individually. Can not be used with the partition field.
+        The following field will list each node individually:
         #{Commands::Info::Lister::NODE_FIELDS.map { |k, v| "* #{k}: #{v}" }.join("\n")}
       DESC
       c.slop.string '-o', '--format', <<~DESC.chomp
@@ -84,10 +84,10 @@ module FlightScheduler
 
         #{Commands::Info::Lister::OTHER_TYPES.map { |k, v| "* %#{k}: #{v}" }.join("\n")}
 
-        The following field is available when listing the partitions (default):
+        The following field will list each partition individually:
         #{Commands::Info::Lister::PARTITION_TYPES.map { |k, v| "* %#{k}: #{v}" }.join("\n")}
 
-        The following fields will list each node individually. Can not be used with the partition field.
+        The following field will list each node individually:
         #{Commands::Info::Lister::NODE_TYPES.map { |k, v| "* %#{k}: #{v}" }.join("\n")}
       DESC
     end

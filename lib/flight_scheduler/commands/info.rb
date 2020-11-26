@@ -31,19 +31,22 @@ module FlightScheduler
       class Lister
         include OutputMode::TLDR::Index
 
+        # NOTE: Fix pluralisation in CLI once an additional type is added
         NODE_TYPES = {
           'n' => 'Hostname of the node',
-          't' => 'State of the nodes'
         }
         # NOTE: Fix pluralisation in CLI once an additional type is added
         PARTITION_TYPES = {
-          'R' => 'Partition name'
+          'R' => 'Partition name',
+          # TODO: Implement the concept of a "partition state"
+          # This is different to the node state and can be up/down possible others
+          # 'a' => 'State of the partition',
         }
         OTHER_TYPES = {
-          'a' => 'State of the partition or nodes',
           'c' => 'Number of CPUs per node',
           'D' => 'Number of nodes',
-          'm' => 'Memory per node (MB)'
+          'm' => 'Memory per node (MB)',
+          't' => 'State of the nodes'
         }
         FORMAT_REGEX = /\A%(?<size>\d*)(?<type>\w)\Z/
 
@@ -66,19 +69,11 @@ module FlightScheduler
         def parse_field_format(format)
           fields = format.split(',')
 
-          # Determine if any mutually exclusive types have been used
-          nodes = fields.select { |f| NODE_FIELDS[f] }
-          partitions = fields.select { |f| PARTITION_FIELDS[f] }
-
-          unless nodes.empty? || partitions.empty?
-            types = [*nodes, *partitions]
-            raise InputError, <<~ERROR.chomp
-              Can not use the following formats together as it requires listing both nodes and partitions:
-              #{types.join(",")}
-            ERROR
-          end
-
-          @node_basis = true unless nodes.empty?
+          # These are required as some of the options may toggle a
+          # 'nodes column' into a 'node column' or the 'state column'
+          # into the 'state partition column'
+          @node_basis = true      if fields.any? { |f| NODE_FIELDS.key?(f) }
+          @partition_basis = true if fields.any? { |f| PARTITION_FIELDS.key?(f) }
 
           fields.each do |field|
             case field
@@ -93,7 +88,7 @@ module FlightScheduler
             when 'Memory'
               register_memory
             when 'State'
-              register_state
+              register_node_state
             when 'Partition'
               register_partition_name
             else
@@ -112,25 +107,17 @@ module FlightScheduler
             end
           end.reject(&:nil?)
 
-          # Determine if any mutually exclusive types have been used
-          nodes = matches.select { |m| NODE_TYPES[m.named_captures['type']] }
-          partitions = matches.select { |m| PARTITION_TYPES[m.named_captures['type']] }
-
-          unless nodes.empty? || partitions.empty?
-            types = [*nodes, *partitions].map(&:to_s)
-            raise InputError, <<~ERROR.chomp
-              Can not use the following formats together as it requires listing both nodes and partitions:
-              #{types.join(" ")}
-            ERROR
-          end
-
-          @node_basis = true unless nodes.empty?
+          # These are required as some of the options may toggle a
+          # 'nodes column' into a 'node column' or the 'state column'
+          # into the 'state partition column'
+          @node_basis = true      if matches.any? { |m| NODE_TYPES.key?(m.named_captures['type']) }
+          @partition_basis = true if matches.any? { |m| PARTITION_TYPES.key?(m.named_captures['type']) }
 
           matches.each do |match|
             type = match.named_captures['type']
             case type
-            when 'a'
-              register_state
+            when 't'
+              register_node_state
             when 'c'
               register_cpus
             when 'D'
@@ -150,8 +137,8 @@ module FlightScheduler
         end
 
         # Returns true if the output will contain state information, else false
-        def state?
-          @state ? true : false
+        def node_state?
+          @node_state ? true : false
         end
 
         # Returns true if the output should list each node individually
@@ -159,12 +146,16 @@ module FlightScheduler
           @node_basis ? true : false
         end
 
+        def partition_basis?
+          @partition_basis ? true : false
+        end
+
         def register_default_columns
           register_partition_name
           register_column(header: 'AVAIL') { |_| 'TBD' }
           register_column(header: 'TIMELIMIT') { |_| 'TBD' }
           register_node_count
-          register_state
+          register_node_state
           register_nodelist
         end
 
@@ -176,28 +167,21 @@ module FlightScheduler
         # A table can not contain both a partition and a node column
         # however the "nodes" can be shared
         def register_partition_column(**opts, &b)
-          register_column(**opts) do |partition, _n, _s|
-            raise InternalError, <<~ERROR.chomp if partition.nil?
-              Attempted to render a partition within a node context
-            ERROR
+          @partition_basis = true
+          register_column(**opts) do |partition, _n|
             b.call(partition)
           end
         end
 
         def register_node_column(**opts, &b)
-          register_column(**opts) do |partition, nodes, _s|
-            raise InternalError, <<~ERROR.chomp unless partition.nil?
-              Attempted to render a node within a partition context
-            ERROR
-            raise InternalError, <<~ERROR.chomp unless node.length == 1
-              Attempted to render a node with '#{node.length}' nodes
-            ERROR
+          @node_basis = true
+          register_column(**opts) do |partition, nodes|
             b.call(nodes.first)
           end
         end
 
         def register_nodes_column(**opts, &b)
-          register_column(**opts) do |partition, nodes, _s|
+          register_column(**opts) do |partition, nodes|
             nodes ||= (partition.nodes || [])
             b.call(nodes)
           end
@@ -214,17 +198,15 @@ module FlightScheduler
           register_nodes_column(header: 'NODES') { |n| n.length }
         end
 
-        def register_state
-          @state = true
-          register_column(header: 'STATE') do |_p, _n, state|
-            raise InternalError, <<~ERROR.chomp if state.nil?
-              Attempted to renderer without a state
-            ERROR
-            state
+        # Assumes all the nodes have been grouped by state
+        def register_node_state
+          @node_state = true
+          register_nodes_column(header: 'STATE') do |nodes|
+            nodes.first&.state
           end
         end
 
-        def register_nodes_nodelist
+        def register_nodelist
           register_nodes_column(header: 'NODELIST') { |n| n.map(&:name).join(',') }
         end
 
@@ -243,13 +225,13 @@ module FlightScheduler
         end
 
         def register_gpus
-          register_nodes_column(header: 'GPUS') do |p|
+          register_nodes_column(header: 'GPUS') do |nodes|
             value_or_min_plus(*nodes.map(&:gpus))
           end
         end
 
         def register_memory
-          register_nodes_column(header: 'MEMORY (MB)') do |p|
+          register_nodes_column(header: 'MEMORY (MB)') do |nodes|
             value_or_min_plus(*nodes.map(&:gpus)) do |value|
               # Convert the memory into MB
               sprintf('%.2f', value.fdiv(1048576))
@@ -295,36 +277,39 @@ module FlightScheduler
       def run
         records = PartitionsRecord.fetch_all(includes: ['nodes'], connection: connection)
 
-        entries = if lister.node_basis?
-          # List each node individually
-          # Can not be used with the partition columns
+        entries = if lister.node_basis? && lister.partition_basis?
+          # List the data as if partition-node exist in a one-one relationship
           records.each_with_object([]) do |partition, memo|
             partition.nodes.each do |node|
-              memo << [nil, [node], node.state]
+              memo << [partition, [node]]
             end
-          end.uniq { |_p, n, _s| n.first.name }
+          end
 
-        elsif lister.state?
-          # Group the nodes into partitions by state
+        elsif lister.node_basis?
+          # List the data as if partition-node exist in many-one relationship
+          # TODO: Consider replacing with a nodes query
+          nodes = records.map(&:nodes).flatten.uniq { |n| n.name }
+          nodes.map do |node|
+            [nil, [node]]
+          end
+
+        elsif lister.node_state?
+          # List the data as if partition-"node-state" is many-one
+          # Defaults to partition-node in one-many
           records.each_with_object([]) do |partition, memo|
             # Collect the nodes by their state
             hash = Hash.new { |h, v| h[v] = [] }
             partition.nodes.each { |node| hash[node.state] << node }
 
             # Create a proxy object for each partition-state combination
-            if hash.empty?
-              # XXX: What should be the state of an empty partition?
-              memo << [partition, [], 'IDLE']
-            else
-              hash.map do |state, nodes|
-                memo << [partition, nodes, state]
-              end
+            hash.map do |state, nodes|
+              memo << [partition, nodes]
             end
           end
 
         else
-          # List the raw partitions
-          records.map { |p| [p, p.nodes, nil] }
+          # Defaults to partition-node in one-many
+          records.map { |p| [p, p.nodes] }
         end
 
         puts lister.build_output.render(*entries)
