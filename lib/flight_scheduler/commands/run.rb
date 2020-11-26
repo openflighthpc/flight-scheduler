@@ -40,7 +40,6 @@ module FlightScheduler
           pty: pty?,
           connection: create_con
         )
-        $stderr.puts "Job step #{job_step.id} added"
 
         # Long poll until the job step has been submitted to all nodes
         # NOTE: Sometimes the submission is sufficiently fast that this
@@ -55,7 +54,6 @@ module FlightScheduler
           )
         end
 
-        $stderr.puts "Job step running"
         if pty? && job_step.executions.length > 1
           # If we're running a PTY session, we expect to have only a single
           # execution running.  Whilst it might be possible to send STDIN to
