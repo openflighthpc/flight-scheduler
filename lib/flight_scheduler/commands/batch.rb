@@ -61,7 +61,7 @@ module FlightScheduler
           # Convert the components into a hash
           others  = parts.each_with_object({}) do |part, memo|
             key, value = part.split('=', 2)
-            memo[key] = value || ENV[key]
+            memo[key] = value || ENV.fetch(key, '')
           end
 
           # Allow all the existing env vars to be exported
