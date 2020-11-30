@@ -103,6 +103,29 @@ module FlightScheduler
       EOF
       slop.string '-o', '--output', 'Redirect STDOUT to this path'
       slop.string '-e', '--error', 'Redirect STDERR to this path'
+      slop.string '--export', <<~EOF
+        Identify which environment variables from the submission environment
+        are propagated to the launched application.
+
+        --export=ALL
+        
+          Default mode if --export is not specified. All of the users
+          environment will be loaded from callers environment.
+          
+        --export=NONE
+        
+          No variables from the user environment will be defined.
+          
+        --export=<[ALL,]environment variables>
+          
+          Exports explicitly defined variables. Multiple environment variable
+          names should be comma separated. Environment variable names may be
+          specified to propagate the current value (e.g. "--export=EDITOR") or
+          specific values may be exported (e.g. "--export=EDITOR=/bin/emacs").
+          If ALL is specified, then all user environment variables will be
+          loaded and will take precedence over any explicitly given
+          environment variables.
+      EOF
     end
 
     create_command 'batch', 'SCRIPT [ARGS...]' do |c|
@@ -111,7 +134,6 @@ module FlightScheduler
       c.slop.string '-C', '--comment-prefix',
                     'Parse comment lines starting with COMMENT_PREFIX as additional options',
                     default: Config::CACHE.comment_prefix
-      c.slop.string '--export', 'Enviroment variables to export'
     end
 
     create_command 'cancel', 'JOBID' do |c|

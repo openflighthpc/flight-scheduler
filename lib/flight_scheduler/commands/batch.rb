@@ -51,10 +51,10 @@ module FlightScheduler
       def environment
         Bundler.with_unbundled_env do
           # Default to displaying everthing
-          return ENV.to_h unless opts.export
+          return ENV.to_h unless merged_opts.export
 
           # Parse the string and remove the ALL and NONE component
-          parts   = CSV.parse(opts.export).first || []
+          parts   = CSV.parse(merged_opts.export).first || []
           all     = (parts.delete('ALL') ? true : false)
           parts.delete('NONE')
 
