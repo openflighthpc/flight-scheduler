@@ -48,8 +48,6 @@ module FlightScheduler
 
   class NodesRecord < BaseRecord
     attributes :name, :state, :cpus, :gpus, :memory
-
-    has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
   end
 
   class JobsRecord < BaseRecord
@@ -70,6 +68,7 @@ module FlightScheduler
       :username
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
+    has_one :'shared-environment', class_name: 'FlightScheduler::EnvironmentsRecord'
     has_many :'allocated-nodes', class_name: 'FlightScheduler::NodesRecord'
   end
 
@@ -77,7 +76,8 @@ module FlightScheduler
     attributes :arguments,
       :job_id,
       :path,
-      :pty
+      :pty,
+      :submitted
 
     has_one :job, class_name: 'FlightScheduler::JobsRecord'
     has_many :executions, class_name: 'FlightScheduler::ExecutionsRecord'
@@ -87,5 +87,9 @@ module FlightScheduler
     attributes :node,
       :port,
       :state
+  end
+
+  class EnvironmentsRecord < BaseRecord
+    attributes :hash
   end
 end

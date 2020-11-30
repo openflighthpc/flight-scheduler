@@ -29,20 +29,36 @@ module FlightScheduler
   module Commands
     class Alloc < Command
       def run
+        create_con = connection.dup.tap { |c| c.params = { include: ['shared-environment'] } }
         job = JobsRecord.create(
           min_nodes: opts.nodes,
-          connection: connection,
+          connection: create_con
         )
-        # XXX It might not be queued.  It could have been immediately
-        # allocated resources.  We should handle that here and add additional
-        # output as the job changes state.  Perhaps, websockety goodness is
-        # needed here.
-        puts "Job #{job.id} queued and waiting for resources"
-        # XXX Replace this with a sane way of detecting if the resources have
-        # been allocated.
-        sleep 1
+
+        # Long Poll until the job becomes available
+        if job.state == 'PENDING'
+          puts "Job #{job.id} queued and waiting for resources"
+          con = connection.dup
+          con.params = { long_poll_pending: true }
+          while job.state == 'PENDING'
+            job = JobsRecord.fetch(
+              connection: con, url_opts: { id: job.id }, includes: ['shared-environment']
+            )
+          end
+        end
+
+        # Exit early if the job is not RUNNING
+        unless job.state == 'RUNNING'
+          raise GeneralError, <<~ERROR.chomp
+            Can not continue with the allocation as the job is in the #{job.state} state
+          ERROR
+        end
+
         puts "Job #{job.id} allocated resources"
         run_command_and_wait(job)
+
+        # Reset the connections to remove the query parameters
+        job.instance_variable_set(:@connection, connection)
         job.delete
         puts "Job #{job.id} resources deallocated"
       end
@@ -53,9 +69,7 @@ module FlightScheduler
           opts = {
             unsetenv_others: false,
           }
-          env = {
-            'JOB_ID' => job.id,
-          }
+          env = job.send('shared-environment').attributes[:hash]
           Kernel.exec(env, command, *args[1..-1], **opts)
         end
         Process.wait(child_pid)
