@@ -40,7 +40,7 @@ module FlightScheduler
           path: resolve_path(args.first),
           pty: pty?,
           connection: create_con,
-          envs: {
+          environment: {
             'TERM' => ENV['TERM'],
             'COLUMNS' => TTY::Screen.columns,
             'LINES' => TTY::Screen.lines
