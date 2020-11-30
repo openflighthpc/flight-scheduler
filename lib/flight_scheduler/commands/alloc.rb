@@ -32,6 +32,7 @@ module FlightScheduler
         create_con = connection.dup.tap { |c| c.params = { include: ['shared-environment'] } }
         job = JobsRecord.create(
           min_nodes: opts.nodes,
+          **shared_batch_alloc_opts,
           connection: create_con
         )
 
