@@ -58,13 +58,14 @@ module FlightScheduler
 
     attributes :arguments,
       :array,
+      :environment,
       :min_nodes,
       :reason,
       :script,
       :script_name,
       :state,
-      :stdout_path,
       :stderr_path,
+      :stdout_path,
       :username
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
