@@ -65,8 +65,7 @@ module FlightScheduler
       :state,
       :stdout_path,
       :stderr_path,
-      :username,
-      :runnable
+      :username
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
     has_one :'shared-environment', class_name: 'FlightScheduler::EnvironmentsRecord'

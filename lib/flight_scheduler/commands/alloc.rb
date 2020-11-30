@@ -36,11 +36,11 @@ module FlightScheduler
         )
 
         # Long Poll until the job becomes available
-        if job.runnable
+        if job.state == 'PENDING'
           puts "Job #{job.id} queued and waiting for resources"
           con = connection.dup
-          con.params = { long_poll_runnable: true }
-          while job.runnable
+          con.params = { long_poll_pending: true }
+          while job.state == 'PENDING'
             job = JobsRecord.fetch(
               connection: con, url_opts: { id: job.id }, includes: ['shared-environment']
             )
