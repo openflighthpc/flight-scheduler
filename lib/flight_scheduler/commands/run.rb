@@ -26,6 +26,7 @@
 #===============================================================================
 require 'io/console'
 require_relative '../stepd_connection'
+require 'tty-screen'
 
 module FlightScheduler
   module Commands
@@ -38,7 +39,12 @@ module FlightScheduler
           job_id: job_id,
           path: resolve_path(args.first),
           pty: pty?,
-          connection: create_con
+          connection: create_con,
+          environment: {
+            'TERM' => ENV['TERM'],
+            'COLUMNS' => TTY::Screen.columns,
+            'LINES' => TTY::Screen.lines
+          },
         )
 
         # Long poll until the job step has been submitted to all nodes
