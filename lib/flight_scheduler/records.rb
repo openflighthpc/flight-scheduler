@@ -41,7 +41,7 @@ module FlightScheduler
   end
 
   class PartitionsRecord < BaseRecord
-    attributes :name, :nodes
+    attributes :name, :nodes, :'time-limit'
 
     has_many :nodes, class_name: 'FlightScheduler::NodesRecord'
   end

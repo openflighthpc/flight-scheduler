@@ -38,6 +38,7 @@ module FlightScheduler
         # NOTE: Fix pluralisation in CLI once an additional type is added
         PARTITION_TYPES = {
           'R' => 'Partition name',
+          'i' => 'Maximum time for a job'
           # TODO: Implement the concept of a "partition state"
           # This is different to the node state and can be up/down possible others
           # 'a' => 'State of the partition',
@@ -56,7 +57,8 @@ module FlightScheduler
         }
         # NOTE: Fix pluralisation in CLI once an additional field is added
         PARTITION_FIELDS = {
-          'Partition' => 'The name of the partition'
+          'Partition' => 'The name of the partition',
+          'Time'      => 'Maximum time for a job'
         }
         OTHER_FIELDS = {
           'NodeList' => 'All the nodes in the partition',
@@ -91,6 +93,8 @@ module FlightScheduler
               register_node_state
             when 'Partition'
               register_partition_name
+            when 'Time'
+              register_maximum_time
             else
               # NOTE: Ensure all of the above FIELDS are implemented otherwise
               # this warning will be inconsistent
@@ -128,6 +132,8 @@ module FlightScheduler
               register_hostnames
             when 'R'
               register_partition_name
+            when 'i'
+              register_maximum_time
             else
               # NOTE: Ensure all of the above TYPES are implemented otherwise
               # this warning will be inconsistent
@@ -153,7 +159,7 @@ module FlightScheduler
         def register_default_columns
           register_partition_name
           register_column(header: 'AVAIL') { |_| 'TBD' }
-          register_column(header: 'TIMELIMIT') { |_| 'TBD' }
+          register_maximum_time
           register_node_count
           register_node_state
           register_nodelist
@@ -239,6 +245,12 @@ module FlightScheduler
           end
         end
 
+        def register_maximum_time
+          register_partition_column(header: 'TIMELIMIT') do |partition|
+            convert_time(partition.send('time-limit'))
+          end
+        end
+
         def value_or_min_plus(*raws, default: 1)
           # Ensures everything is an integer
           # Ignores nil values
@@ -253,6 +265,19 @@ module FlightScheduler
 
           # Append a plus if the maximum value is larger
           min == max ? value.to_s : "#{value}+"
+        end
+
+        def convert_time(seconds)
+          days    = seconds / 86400
+          seconds = seconds % 86400
+
+          hours   = seconds / 3600
+          seconds = seconds % 3600
+
+          minutes = seconds / 60
+          seconds = seconds % 60
+
+          "#{days}-#{hours}:#{minutes}:#{seconds}"
         end
 
         def warn_unrecognised_field(field)
