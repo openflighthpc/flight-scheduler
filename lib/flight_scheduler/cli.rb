@@ -92,32 +92,43 @@ module FlightScheduler
       DESC
     end
 
+    SHARED_BATCH_ALLOC_PROC = ->(slop) do
+      slop.bool '--exclusive', 'Aquire exclusive access to the nodes'
+      slop.integer '--mincpus', 'Specify the minimum number of cpus per node'
+      slop.integer '--gpus-per-node', 'Specify the minimum number of gpus per node'
+      slop.string '--mem', <<~EOF.chomp
+        Specify the minimum amount of memory per node.
+        The default unit is MB, however a K|M|G|T suffix can be used to change the unit.
+      EOF
+    end
+
     MAGIC_BATCH_SLOP = Slop::Options.new.tap do |slop|
       slop.parser.config[:suppress_errors] = true
       slop.string '-N', '--nodes', 'The minimum number of required nodes'
-      slop.string '-a', '--array', <<~EOF
+      slop.string '-a', '--array', <<~EOF.chomp
         Submit a job array, multiple jobs to be  executed  with  identical
         parameters.  The indexes  specification  identifies  what  array index
         values should be used. Multiple values may be specified using a comma
         separated list, e.g., --array=1,2,3,4.
       EOF
+      SHARED_BATCH_ALLOC_PROC.call(slop)
       slop.string '-o', '--output', 'Redirect STDOUT to this path'
       slop.string '-e', '--error', 'Redirect STDERR to this path'
-      slop.string '--export', <<~EOF
+      slop.string '--export', <<~EOF.chomp
         Identify which environment variables from the submission environment
         are propagated to the launched application.
 
         --export=ALL
-        
+
           Default mode if --export is not specified. All of the users
           environment will be loaded from callers environment.
-          
+
         --export=NONE
-        
+
           No variables from the user environment will be defined.
-          
+
         --export=<[ALL,]environment variables>
-          
+
           Exports explicitly defined variables. Multiple environment variable
           names should be comma separated. Environment variable names may be
           specified to propagate the current value (e.g. "--export=EDITOR") or
@@ -149,6 +160,7 @@ module FlightScheduler
       c.slop.string '-N', '--nodes',
                     'The minimum number of required nodes',
                     default: 1
+      SHARED_BATCH_ALLOC_PROC.call(c.slop)
     end
 
     create_command 'run', 'EXECUTABLE [ARGS...]' do |c|

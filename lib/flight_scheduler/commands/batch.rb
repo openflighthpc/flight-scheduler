@@ -42,6 +42,7 @@ module FlightScheduler
                                 stdout_path: merged_opts.output,
                                 stderr_path: merged_opts.error,
                                 environment: environment,
+                                **shared_batch_alloc_opts,
                                 connection: connection)
         # TODO: Remove the id array stripping, this is a bug in the API
         #       specification

@@ -108,5 +108,29 @@ module FlightScheduler
         root ? File.join(root, path) : raise(MissingError, "Could not locate: #{path}")
       end
     end
+
+    def shared_batch_alloc_opts
+      {}.tap do |hash|
+        hash[:cpus_per_node] = opts.mincpus if opts.mincpus
+        hash[:gpus_per_node] = opts.gpus_per_node if opts.gpus_per_node
+        hash[:exclusive] = true if opts.exclusive
+        if opts.mem
+          int = (/\d+/.match(opts.mem) || [])[0].to_i
+
+          hash[:memory_per_node] = case opts.mem
+          when /\A\d+(MB?)?\Z/
+            int * 1048576
+          when /\A\d+KB?\Z/
+            int * 1024
+          when /\A\d+GB?\Z/
+            int * 1073741824
+          when /\A\d+TB?\Z/
+            int * 1099511627776
+          else
+            raise InputError, "Unrecognised memory amount: #{opts.mem}"
+          end
+        end
+      end
+    end
   end
 end
