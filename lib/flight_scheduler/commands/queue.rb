@@ -41,7 +41,7 @@ module FlightScheduler
       end
       register_column(header: 'USER') { |j| j.username }
       register_column(header: 'ST') { |j| j.state }
-      register_column(header: 'TIME') { |_| 'TBD' }
+      register_column(header: 'TIME') { |j| convert_time j.send('time-limit') }
       register_column(header: 'NODES') { |j| j.attributes[:'min-nodes'] }
       register_column(header: 'NODELIST(REASON)') do |record|
         nodes = record.relationships[:'allocated-nodes'].map(&:name).join(',')

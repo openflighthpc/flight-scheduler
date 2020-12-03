@@ -35,6 +35,20 @@ require 'etc'
 
 module FlightScheduler
   class Command
+    def self.convert_time(seconds)
+      return nil if nil
+      days    = seconds / 86400
+      seconds = seconds % 86400
+
+      hours   = seconds / 3600
+      seconds = seconds % 3600
+
+      minutes = seconds / 60
+      seconds = seconds % 60
+
+      "#{days}-#{hours}:#{minutes}:#{seconds}"
+    end
+
     attr_accessor :args, :opts
 
     def initialize(*args, **opts)

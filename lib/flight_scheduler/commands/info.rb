@@ -247,7 +247,7 @@ module FlightScheduler
 
         def register_maximum_time
           register_partition_column(header: 'TIMELIMIT') do |partition|
-            convert_time(partition.send('time-limit'))
+            Command.convert_time(partition.send('max-time-limit'))
           end
         end
 
@@ -265,19 +265,6 @@ module FlightScheduler
 
           # Append a plus if the maximum value is larger
           min == max ? value.to_s : "#{value}+"
-        end
-
-        def convert_time(seconds)
-          days    = seconds / 86400
-          seconds = seconds % 86400
-
-          hours   = seconds / 3600
-          seconds = seconds % 3600
-
-          minutes = seconds / 60
-          seconds = seconds % 60
-
-          "#{days}-#{hours}:#{minutes}:#{seconds}"
         end
 
         def warn_unrecognised_field(field)

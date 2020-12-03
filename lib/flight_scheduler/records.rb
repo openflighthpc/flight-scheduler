@@ -41,7 +41,7 @@ module FlightScheduler
   end
 
   class PartitionsRecord < BaseRecord
-    attributes :name, :nodes, :'time-limit'
+    attributes :name, :nodes, :'max-time-limit', :'default-time-limit'
 
     has_many :nodes, class_name: 'FlightScheduler::NodesRecord'
   end
@@ -70,7 +70,8 @@ module FlightScheduler
       :cpus_per_node,
       :gpus_per_node,
       :memory_per_node,
-      :exclusive
+      :exclusive,
+      :'time-limit'
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
     has_one :'shared-environment', class_name: 'FlightScheduler::EnvironmentsRecord'
