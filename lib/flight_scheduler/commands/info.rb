@@ -247,7 +247,7 @@ module FlightScheduler
 
         def register_maximum_time
           register_partition_column(header: 'TIMELIMIT') do |partition|
-            Command.convert_time(partition.send('max-time-limit'))
+            Command.convert_time(partition.attributes[:'max-time-limit'])
           end
         end
 

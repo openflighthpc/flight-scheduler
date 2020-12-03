@@ -71,7 +71,8 @@ module FlightScheduler
       :gpus_per_node,
       :memory_per_node,
       :exclusive,
-      :'time-limit'
+      :time_limit,
+      :time_limit_spec
 
     has_one :partition, class_name: 'FlightScheduler::PartitionsRecord'
     has_one :'shared-environment', class_name: 'FlightScheduler::EnvironmentsRecord'

@@ -128,6 +128,7 @@ module FlightScheduler
         hash[:cpus_per_node] = opts.mincpus if opts.mincpus
         hash[:gpus_per_node] = opts.gpus_per_node if opts.gpus_per_node
         hash[:exclusive] = true if opts.exclusive
+        hash[:time_limit_spec] = opts.time if opts.time
         if opts.mem
           int = (/\d+/.match(opts.mem) || [])[0].to_i
 
