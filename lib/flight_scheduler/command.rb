@@ -36,7 +36,7 @@ require 'etc'
 module FlightScheduler
   class Command
     def self.convert_time(seconds)
-      return nil if nil
+      return nil unless seconds
       days    = seconds / 86400
       seconds = seconds % 86400
 
