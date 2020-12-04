@@ -158,7 +158,6 @@ module FlightScheduler
 
     create_command 'alloc', '[COMMAND] [ARGS...]' do |c|
       c.summary = 'Obtain a resource allocation, execute the given command and release the allocation when the command is finished.'
-      SHARED_ALLOC_BATCH_SLOP.call(c.slop)
       c.slop.string '-N', '--nodes',
                     'The minimum number of required nodes',
                     default: 1
