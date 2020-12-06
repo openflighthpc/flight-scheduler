@@ -100,6 +100,7 @@ module FlightScheduler
         Specify the minimum amount of memory per node.
         The default unit is MB, however a K|M|G|T suffix can be used to change the unit.
       EOF
+      slop.string '--time', 'The period to timeout after'
     end
 
     MAGIC_BATCH_SLOP = Slop::Options.new.tap do |slop|

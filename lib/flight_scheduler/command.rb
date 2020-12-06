@@ -35,6 +35,20 @@ require 'etc'
 
 module FlightScheduler
   class Command
+    def self.convert_time(seconds)
+      return nil unless seconds
+      days    = seconds / (60 * 60 * 24)
+      seconds = seconds % (60 * 60 * 24)
+
+      hours   = seconds / (60 * 60)
+      seconds = seconds % (60 * 60)
+
+      minutes = seconds / 60
+      seconds = seconds % 60
+
+      "#{days}-#{hours}:#{minutes}:#{seconds}"
+    end
+
     attr_accessor :args, :opts
 
     def initialize(*args, **opts)
@@ -109,15 +123,16 @@ module FlightScheduler
       end
     end
 
-    def shared_batch_alloc_opts
+    def shared_batch_alloc_opts(options=opts)
       {}.tap do |hash|
-        hash[:cpus_per_node] = opts.mincpus if opts.mincpus
-        hash[:gpus_per_node] = opts.gpus_per_node if opts.gpus_per_node
-        hash[:exclusive] = true if opts.exclusive
-        if opts.mem
-          int = (/\d+/.match(opts.mem) || [])[0].to_i
+        hash[:cpus_per_node] = options.mincpus if options.mincpus
+        hash[:gpus_per_node] = options.gpus_per_node if options.gpus_per_node
+        hash[:exclusive] = true if options.exclusive
+        hash[:time_limit_spec] = options.time if options.time
+        if options.mem
+          int = (/\d+/.match(options.mem) || [])[0].to_i
 
-          hash[:memory_per_node] = case opts.mem
+          hash[:memory_per_node] = case options.mem
           when /\A\d+(MB?)?\Z/
             int * 1048576
           when /\A\d+KB?\Z/
@@ -127,7 +142,7 @@ module FlightScheduler
           when /\A\d+TB?\Z/
             int * 1099511627776
           else
-            raise InputError, "Unrecognised memory amount: #{opts.mem}"
+            raise InputError, "Unrecognised memory amount: #{options.mem}"
           end
         end
       end
