@@ -68,9 +68,13 @@ module FlightScheduler
   end
 
   class JobsRecord < BaseRecord
+    # NOTE: Memory is not included here as it is validated and expanded client side
     CREATE_ERROR_MAP = {
-      "/data/attributes/array"      => '--array ARRAY     - does not give a valid range expression',
-      "/data/attributes/min-nodes"  => '--nodes MIN_NODES - must be a number with an optional k or m suffix'
+      "/data/attributes/array" => '--array ARRAY - does not give a valid range expression',
+      "/data/attributes/min-nodes" => '--nodes MIN_NODES - must be a whole number with an optional k or m suffix',
+      "/data/attributes/time-limit-spec" => '--time TIME - must be a whole number',
+      "/data/attributes/cpus-per-node" => '--mincpus MINCPUS - must be a natural number',
+      "/data/attributes/gpus-per-node" => '--gpus-per-node GPUS_PER_NODE - must be a whole number'
     }
 
     def self.create(**_)
