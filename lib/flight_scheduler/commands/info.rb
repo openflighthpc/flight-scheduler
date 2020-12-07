@@ -158,7 +158,10 @@ module FlightScheduler
 
         def register_default_columns
           register_partition_name
-          register_column(header: 'AVAIL') { |_| 'TBD' }
+          # NOTE: This is the state of the partition, not the node's on the partition
+          # The valid states *may* eventually be up, down, drain, inact (aka inactive).
+          # It is assumed that all partitions are 'up'
+          register_column(header: 'AVAIL') { |_| 'up' }
           register_maximum_time
           register_node_count
           register_node_state
