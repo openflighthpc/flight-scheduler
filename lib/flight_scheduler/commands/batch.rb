@@ -39,7 +39,7 @@ module FlightScheduler
           script_name: File.basename(script_path),
           script: script_body,
           array: merged_opts.array,
-          min_nodes: merged_opts.nodes,
+          min_nodes: merged_opts.nodes || '1',
           stdout_path: merged_opts.output,
           stderr_path: merged_opts.error,
           environment: environment,
