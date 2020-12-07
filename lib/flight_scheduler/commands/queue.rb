@@ -56,6 +56,12 @@ module FlightScheduler
 
       def run
         records = JobsRecord.fetch_all(includes: INCLUDES, connection: connection)
+
+        if records.empty?
+          $stderr.puts '(none)'
+          return
+        end
+
         puts self.class.build_output.render(*records)
       end
     end

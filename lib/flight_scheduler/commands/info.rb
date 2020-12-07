@@ -289,6 +289,11 @@ module FlightScheduler
       def run
         records = PartitionsRecord.fetch_all(includes: ['nodes'], connection: connection)
 
+        if records.empty?
+          $stderr.puts '(none)'
+          return
+        end
+
         entries = if lister.node_basis? && lister.partition_basis?
           # List the data as if partition-node exist in a one-one relationship
           records.each_with_object([]) do |partition, memo|
