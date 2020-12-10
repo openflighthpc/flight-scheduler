@@ -208,6 +208,7 @@ module FlightScheduler
         end
 
         # Assumes all the nodes have been grouped by state
+        # NOTE: Must be able to handle partitions without nodes
         def register_node_state
           @node_state = true
           register_nodes_column(header: 'STATE') do |nodes|
@@ -319,10 +320,14 @@ module FlightScheduler
           records.each_with_object([]) do |partition, memo|
             # Collect the nodes by their state
             hash = Hash.new { |h, v| h[v] = [] }
-            partition.nodes.each { |node| hash[node.state] << node }
+            if partition.nodes.empty?
+              hash['MISSING'] = []
+            else
+              partition.nodes.each { |node| hash[node.state] << node }
+            end
 
             # Create a proxy object for each partition-state combination
-            hash.map do |state, nodes|
+            hash.map do |_, nodes|
               memo << [partition, nodes]
             end
           end
