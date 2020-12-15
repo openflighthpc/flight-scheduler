@@ -118,7 +118,7 @@ module FlightScheduler
           cli = opts.reject { |_, v| v.nil? }
                     .map { |k, v| [k.to_s, v] }
                     .to_h
-          Hashie::Mash.new.merge(magic).merge(cli)
+          Command::Options.new.merge(magic).merge(cli)
         end
       end
 

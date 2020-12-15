@@ -35,6 +35,10 @@ require 'etc'
 
 module FlightScheduler
   class Command
+    class Options < Hashie::Mash
+      disable_warnings :partition
+    end
+
     def self.convert_time(seconds)
       return nil unless seconds
       days    = seconds / (60 * 60 * 24)
@@ -53,7 +57,7 @@ module FlightScheduler
 
     def initialize(*args, **opts)
       @args = args.freeze
-      @opts = Hashie::Mash.new(opts)
+      @opts = Options.new(opts)
     end
 
     def run!
