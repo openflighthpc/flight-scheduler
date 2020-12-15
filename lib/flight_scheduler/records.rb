@@ -74,7 +74,8 @@ module FlightScheduler
       "/data/attributes/min-nodes" => '--nodes MIN_NODES - must be a whole number with an optional k or m suffix',
       "/data/attributes/time-limit-spec" => '--time TIME - must be a whole number',
       "/data/attributes/cpus-per-node" => '--mincpus MINCPUS - must be a natural number',
-      "/data/attributes/gpus-per-node" => '--gpus-per-node GPUS_PER_NODE - must be a whole number'
+      "/data/attributes/gpus-per-node" => '--gpus-per-node GPUS_PER_NODE - must be a whole number',
+      "/data/attributes/partition" => '--partition PARTITION - cannot be found',
     }
 
     def self.create(**_)
