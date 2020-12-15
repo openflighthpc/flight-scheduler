@@ -34,16 +34,31 @@ module FlightScheduler
 
       def run
         ensure_shebang
-        job = JobsRecord.create(arguments: args[1..-1],
-                                script_name: File.basename(script_path),
-                                script: script_body,
-                                array: merged_opts.array,
-                                min_nodes: min_nodes,
-                                stdout_path: merged_opts.output,
-                                stderr_path: merged_opts.error,
-                                environment: environment,
-                                **shared_batch_alloc_opts(merged_opts),
-                                connection: connection)
+        attributes = {
+          arguments: args[1..-1],
+          script_name: File.basename(script_path),
+          script: script_body,
+          array: merged_opts.array,
+          min_nodes: min_nodes,
+          stdout_path: merged_opts.output,
+          stderr_path: merged_opts.error,
+          environment: environment,
+          **shared_batch_alloc_opts(merged_opts)
+        }
+        relationships = {}.tap do |h|
+          if merged_opts.key?(:partition)
+            h[:partition] = PartitionsRecord.new(
+              id: merged_opts[:partition],
+              connection: connection,
+            )
+          end
+        end
+
+        job = JobsRecord.create(
+          attributes: attributes,
+          relationships: relationships,
+          connection: connection,
+        )
         # TODO: Remove the id array stripping, this is a bug in the API
         #       specification
         puts "Submitted batch job #{job.id.sub(/\[.*\Z/, '')}"
@@ -103,7 +118,7 @@ module FlightScheduler
           cli = opts.reject { |_, v| v.nil? }
                     .map { |k, v| [k.to_s, v] }
                     .to_h
-          Hashie::Mash.new.merge(magic).merge(cli)
+          Command::Options.new.merge(magic).merge(cli)
         end
       end
 

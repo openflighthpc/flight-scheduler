@@ -100,6 +100,11 @@ module FlightScheduler
         Specify the minimum amount of memory per node.
         The default unit is MB, however a K|M|G|T suffix can be used to change the unit.
       EOF
+      slop.string '-p', '--partition', <<~EOF.chomp
+        Request a specific partition for the resource allocation.  If not
+        specified the default partition as designated by the system
+        administrator is selected.
+      EOF
       slop.string '--time', 'The period to timeout after'
     end
 
