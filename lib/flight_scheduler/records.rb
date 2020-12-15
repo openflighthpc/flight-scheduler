@@ -37,6 +37,23 @@ module FlightScheduler
       )
       base.const_set('COLLECTION_URL', "/#{Config::CACHE.api_prefix}/#{base::TYPE}")
       base.const_set('INDIVIDUAL_URL', "#{base::COLLECTION_URL}/%{id}")
+      base.const_set('SINGULAR_TYPE', base::TYPE.singularize)
+    end
+
+    ##
+    # Override the delete method to nicely handle missing records
+    def delete
+      super
+    rescue SimpleJSONAPIClient::Errors::NotFoundError
+      if $!.response['content-type'] == 'application/vnd.api+json'
+        # Handle proper API errors
+        raise MissingError, <<~ERROR.chomp
+          Could not locate #{self.class::SINGULAR_TYPE}: "#{self.id}"
+        ERROR
+      else
+        # Fallback to the top level error handler
+        raise e
+      end
     end
   end
 
@@ -51,9 +68,31 @@ module FlightScheduler
   end
 
   class JobsRecord < BaseRecord
-    # Used to abstract the difference between tasks and jobs
-    def job
-      self
+    # NOTE: Memory is not included here as it is validated and expanded client side
+    CREATE_ERROR_MAP = {
+      "/data/attributes/array" => '--array ARRAY - does not give a valid range expression',
+      "/data/attributes/min-nodes" => '--nodes MIN_NODES - must be a whole number with an optional k or m suffix',
+      "/data/attributes/time-limit-spec" => '--time TIME - must be a whole number',
+      "/data/attributes/cpus-per-node" => '--mincpus MINCPUS - must be a natural number',
+      "/data/attributes/gpus-per-node" => '--gpus-per-node GPUS_PER_NODE - must be a whole number',
+      "/data/attributes/partition" => '--partition PARTITION - cannot be found',
+    }
+
+    def self.create(**_)
+      super
+    rescue SimpleJSONAPIClient::Errors::UnprocessableEntityError
+      Config::CACHE.logger.debug "(#{$!.class}) #{$!.full_message}"
+
+      base_msg = "Failed to create the job as the following #{ $!.errors.length == 1 ? 'error has' : 'errors have' } occured:"
+      errors = $!.errors.map do |e|
+        pointer = e['source']['pointer']
+        self::CREATE_ERROR_MAP[pointer] || "An unknown error has occurred: #{pointer}"
+      end
+      full_message = <<~ERROR.chomp
+        #{base_msg}
+        #{errors.map { |e| " * #{e}" }.join("\n")}
+      ERROR
+      raise ClientError, full_message
     end
 
     attributes :arguments,

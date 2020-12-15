@@ -71,8 +71,30 @@ module FlightScheduler
         Config::CACHE.logger.fatal 'Exited non-zero'
       end
       Config::CACHE.logger.debug e.backtrace.reverse.join("\n")
-      Config::CACHE.logger.error "(#{e.class}) #{e.message}"
-      raise e
+      Config::CACHE.logger.error "(#{e.class}) #{e.full_message}"
+
+      if e.is_a?(Faraday::ConnectionFailed)
+        raise GeneralError, 'Failed to establish a connection to the scheduler!'
+      elsif e.is_a?(SimpleJSONAPIClient::Errors::NotFoundError) && e.response['content-type'] != 'application/vnd.api+json'
+        raise GeneralError, <<~ERROR.chomp
+          Received an unrecognised response from the scheduler!
+          Please check the following configuration and try again: #{Paint["'base_url' and 'api_prefix'", :yellow]}
+        ERROR
+      elsif e.is_a?(SimpleJSONAPIClient::Errors::APIError) && e.response['content-type'] == 'application/vnd.api+json' && e.status < 500
+        # Generic error handling of API requests. In general these errors should
+        # be caught before here. However this is a useful fallback
+        raise ClientError, <<~ERROR.chomp
+          An error has occurred during your request:
+          #{e.message}
+        ERROR
+      elsif e.is_a?(SimpleJSONAPIClient::Errors::APIError)
+        raise ServerError, <<~ERROR.chomp
+          An unexpected error has occurred during your request!
+          Please contact your system administrator for further assistance.
+        ERROR
+      else
+        raise e
+      end
     end
 
     def run

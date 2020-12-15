@@ -158,7 +158,10 @@ module FlightScheduler
 
         def register_default_columns
           register_partition_name
-          register_column(header: 'AVAIL') { |_| 'TBD' }
+          # NOTE: This is the state of the partition, not the node's on the partition
+          # The valid states *may* eventually be up, down, drain, inact (aka inactive).
+          # It is assumed that all partitions are 'up'
+          register_column(header: 'AVAIL') { |_| 'up' }
           register_maximum_time
           register_node_count
           register_node_state
@@ -288,6 +291,11 @@ module FlightScheduler
 
       def run
         records = PartitionsRecord.fetch_all(includes: ['nodes'], connection: connection)
+
+        if records.empty?
+          $stderr.puts '(none)'
+          return
+        end
 
         entries = if lister.node_basis? && lister.partition_basis?
           # List the data as if partition-node exist in a one-one relationship
