@@ -310,6 +310,10 @@ module FlightScheduler
           # List the data as if partition-node exist in many-one relationship
           # TODO: Consider replacing with a nodes query
           nodes = records.map(&:nodes).flatten.uniq { |n| n.name }
+          if nodes.empty?
+            $stderr.puts '(none)'
+            return
+          end
           nodes.map do |node|
             [nil, [node]]
           end
