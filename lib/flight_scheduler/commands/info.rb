@@ -242,9 +242,13 @@ module FlightScheduler
 
         def register_memory
           register_nodes_column(header: 'MEMORY (MB)') do |nodes|
-            value_or_min_plus(*nodes.map(&:memory), default: 1048576) do |value|
-              # Convert the memory into MB
-              sprintf('%d', value.fdiv(1048576))
+            if nodes.empty?
+              "(none)"
+            else
+              value_or_min_plus(*nodes.map(&:memory), default: 1048576) do |value|
+                # Convert the memory into MB
+                sprintf('%d', value.fdiv(1048576))
+              end
             end
           end
         end
