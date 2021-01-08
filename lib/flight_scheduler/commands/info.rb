@@ -258,7 +258,11 @@ module FlightScheduler
         def value_or_min_plus(*raws, default: 1)
           # Ensures everything is an integer
           # Ignores nil values
-          values = raws.map { |v| v.nil? ? default : v }
+          values = if raws.empty?
+            [default]
+          else
+            raws.map { |v| v.nil? ? default : v }
+          end
 
           # Determine the minimum and maximum value
           min = values.min
